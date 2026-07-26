@@ -190,6 +190,18 @@
     .pdc-title { font-size: 1.3rem; font-weight: 800; color: var(--gold); }
     .pdc-desc  { font-size: 0.95rem; color: rgba(255,255,255,0.72); line-height: 1.6; }
 
+    /* ===== شريحة 6: السؤال اليومي ===== */
+    .slide-question { background: linear-gradient(150deg, #12233a 0%, #22406a 100%); }
+    .question-card {
+      display: flex; flex-direction: column; align-items: center; gap: 24px;
+      max-width: 900px; text-align: center;
+    }
+    .question-icon { font-size: 3.2rem; }
+    .question-text {
+      font-size: 2.1rem; font-weight: 800; line-height: 1.6; color: var(--white);
+    }
+    .question-empty { color: rgba(255,255,255,0.55); font-size: 1.4rem; font-weight: 600; }
+
     /* زر fullscreen */
     #fsBtn {
       position: fixed; bottom: 18px; right: 24px; z-index: 200;
@@ -326,10 +338,25 @@
     </div>
   </div>
 
+  <!-- ===== شريحة 6: السؤال اليومي ===== -->
+  <div class="slide slide-question" id="slide-5">
+    <div class="question-card">
+      <div class="question-icon">❓</div>
+      <div class="slide-title" style="margin-bottom:0;">السؤال اليومي</div>
+      <div class="question-text" id="dailyQuestionText">
+        <% if (dailyQuestion) { %>
+          <%= dailyQuestion %>
+        <% } else { %>
+          <span class="question-empty">لا يوجد سؤال يومي اليوم</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
 </div><!-- end slides-wrapper -->
 
 <script>
-  const SLIDE_COUNT   = 5;
+  const SLIDE_COUNT   = 6;
   const SLIDE_DURATION = 7000; // مللي ثانية
   const REFRESH_INTERVAL = 60000; // تحديث البيانات كل دقيقة
 
@@ -421,6 +448,12 @@
       document.getElementById('statKnowledge').textContent  = data.stats.totalKnowledge;
       document.getElementById('statSports').textContent     = data.stats.totalSports;
       document.getElementById('statCultural').textContent   = data.stats.totalCultural;
+
+      /* السؤال اليومي */
+      const qEl = document.getElementById('dailyQuestionText');
+      qEl.innerHTML = data.dailyQuestion
+        ? data.dailyQuestion
+        : '<span class="question-empty">لا يوجد سؤال يومي اليوم</span>';
 
       /* الجلسة الحالية */
       if (data.currentSession) {

@@ -8,6 +8,7 @@ const statsModel   = require("../models/statsModel");
 const studentModel = require("../models/studentModel");
 const groupModel   = require("../models/groupModel");
 const sessionModel = require("../models/sessionModel");
+const { getTodayQuestion } = require("../config/dailyQuestions");
 
 /* -------- صفحة العرض -------- */
 async function showDisplay(req, res, next) {
@@ -15,8 +16,9 @@ async function showDisplay(req, res, next) {
     const stats    = await statsModel.getHomeStats();
     const settings = await statsModel.getSettings();
     const clubDays = await statsModel.getClubDayNames();
+    const dailyQuestion = getTodayQuestion();
 
-    res.render("display", { stats, settings, clubDays });
+    res.render("display", { stats, settings, clubDays, dailyQuestion });
   } catch (err) {
     next(err);
   }
@@ -31,8 +33,9 @@ async function getDisplayData(req, res, next) {
       groupModel.getRankedGroups(),
       sessionModel.getCurrentOrNextSession(),
     ]);
+    const dailyQuestion = getTodayQuestion();
 
-    res.json({ success: true, stats, topByCategory, groups, currentSession });
+    res.json({ success: true, stats, topByCategory, groups, currentSession, dailyQuestion });
   } catch (err) {
     next(err);
   }
