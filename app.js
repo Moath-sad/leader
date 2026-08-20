@@ -17,6 +17,11 @@ const displayRoutes = require("./routes/displayRoutes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// نثق بالبروكسي الأمامي (Railway) حتى يتعرّف Express على أن الاتصال HTTPS فعلياً
+// عبر ترويسة X-Forwarded-Proto، وإلا فلن يُحفَظ كوكي الجلسة (secure: true) أبداً
+// ويفشل تسجيل دخول المشرف/الإدارة في الإنتاج رغم صحة الرمز
+app.set("trust proxy", 1);
+
 /* -------- محرك القوالب EJS -------- */
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
