@@ -352,7 +352,7 @@ function setupStudentSearchSelects() {
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
 
-  setupStudentSearchSelect("pointsStudentSearch", "pointsStudentResults", "pointsStudentSelect", students);
+  setupStudentSearchSelect("initiativeStudentSearch", "initiativeStudentResults", "initiativeStudentSelect", students);
   setupStudentSearchSelect("attendanceStudentSearch", "attendanceStudentResults", "attendanceStudentSelect", students);
   setupStudentSearchSelect("tasksStudentSearch", "tasksStudentResults", "tasksStudentSelect", students, (id) => {
     loadKnowledgeTasks(id);
@@ -429,50 +429,37 @@ function setupStudentSearchSelect(inputId, resultsId, hiddenId, students, onSele
 }
 
 /* =========================================================
-   1) إضافة / خصم النقاط
+   1) تسجيل مبادرة (إضافة / خصم نقاط بأحد المحاور الأربعة)
    ========================================================= */
 function setupPointsForm() {
-  const addBtn = document.getElementById("addPointsBtn");
-  const subtractBtn = document.getElementById("subtractPointsBtn");
-  const msg = document.getElementById("pointsMsg");
-  const programSelect = document.getElementById("programSelect");
-  const categoryGroup = document.getElementById("initiativeCategoryGroup");
-
-  function syncCategoryVisibility() {
-    if (!categoryGroup) return;
-    categoryGroup.style.display = programSelect.value === "initiative" ? "" : "none";
-  }
-  if (programSelect) {
-    programSelect.addEventListener("change", syncCategoryVisibility);
-    syncCategoryVisibility();
-  }
+  const addBtn = document.getElementById("addInitiativeBtn");
+  const subtractBtn = document.getElementById("subtractInitiativeBtn");
+  const msg = document.getElementById("initiativeMsg");
+  if (!addBtn || !subtractBtn) return;
 
   addBtn.addEventListener("click", () => submitPoints("add"));
   subtractBtn.addEventListener("click", () => submitPoints("subtract"));
 
   async function submitPoints(mode) {
-    const studentId = document.getElementById("pointsStudentSelect").value;
-    const program = document.getElementById("programSelect").value;
-    const amount = Number(document.getElementById("pointsAmount").value);
-    const reason = document.getElementById("pointsReason").value.trim();
-    const studentName = document.getElementById("pointsStudentSelect").dataset.name;
+    const studentId = document.getElementById("initiativeStudentSelect").value;
+    const amount = Number(document.getElementById("initiativeAmount").value);
+    const reason = document.getElementById("initiativeCategorySelect").value;
+    const studentName = document.getElementById("initiativeStudentSelect").dataset.name;
 
     if (!studentId) {
       showMsg(msg, "اختر طالباً أولاً", "error");
       return;
     }
-
+    if (!reason) {
+      showMsg(msg, "اختر محور المبادرة", "error");
+      return;
+    }
     if (!amount || amount <= 0) {
       showMsg(msg, "أدخل عدد نقاط صحيح", "error");
       return;
     }
 
-    if (program === "initiative" && !reason) {
-      showMsg(msg, "اختر محور المبادرة", "error");
-      return;
-    }
-
-    await sendPointsRequest({ studentId, program, amount, reason, mode, studentName, msg });
+    await sendPointsRequest({ studentId, program: "initiative", amount, reason, mode, studentName, msg });
   }
 
   async function sendPointsRequest({ studentId, program, amount, reason, mode, studentName, msg }) {
@@ -489,19 +476,17 @@ function setupPointsForm() {
         return;
       }
 
-      const actionLabel = mode === "subtract" ? "خصم" : "إضافة";
+      const actionLabel = mode === "subtract" ? "خصم" : "تسجيل";
       msg.className = "form-msg success";
-      msg.innerHTML = `تم ${actionLabel} ${amount} نقطة لـ ${studentName} بنجاح ✅ <button type="button" class="btn-undo-points">↩️ تراجع</button>`;
-      document.getElementById("pointsAmount").value = "";
-      document.getElementById("pointsReason").value = "";
+      msg.innerHTML = `تم ${actionLabel} ${amount} نقطة (${reason}) لـ ${studentName} بنجاح ✅ <button type="button" class="btn-undo-points">↩️ تراجع</button>`;
+      document.getElementById("initiativeAmount").value = "";
 
       const undoBtn = msg.querySelector(".btn-undo-points");
       undoBtn.addEventListener("click", async () => {
         undoBtn.disabled = true;
         const reverseMode = mode === "subtract" ? "add" : "subtract";
         await sendPointsRequest({
-          studentId, program, amount,
-          reason: "تراجع عن آخر عملية",
+          studentId, program, amount, reason,
           mode: reverseMode, studentName, msg,
         });
       }, { once: true });

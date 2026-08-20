@@ -105,34 +105,31 @@
     <h3 class="panel-group-title">🏆 النقاط</h3>
 
     <div class="panel-grid" style="margin-bottom:18px;">
-      <!-- نموذج إضافة / خصم النقاط -->
+      <!-- تسجيل مبادرة -->
       <div class="panel-box">
-        <h4>إضافة أو خصم نقاط لطالب</h4>
-        <form id="pointsForm">
+        <h4>🌟 تسجيل مبادرة</h4>
+        <form id="initiativeForm">
           <div class="form-group">
-            <label for="pointsStudentSearch">اختر الطالب</label>
+            <label for="initiativeStudentSearch">اختر الطالب</label>
             <div class="search-box-wrapper" style="margin-bottom:0;">
-              <input type="text" id="pointsStudentSearch" class="search-input" placeholder="اكتب اسم الطالب..." autocomplete="off">
-              <div class="search-results" id="pointsStudentResults"></div>
+              <input type="text" id="initiativeStudentSearch" class="search-input" placeholder="اكتب اسم الطالب..." autocomplete="off">
+              <div class="search-results" id="initiativeStudentResults"></div>
             </div>
-            <input type="hidden" id="pointsStudentSelect">
+            <input type="hidden" id="initiativeStudentSelect">
           </div>
           <div class="form-group">
-            <label for="programSelect">اللجنة / البرنامج</label>
-            <% if (role === 'admin') { %>
-              <select id="programSelect" class="form-select">
-                <option value="knowledge">البرنامج الذاتي</option>
-                <option value="initiative">مبادرة</option>
-              </select>
-            <% } else { %>
-              <select id="programSelect" class="form-select" disabled>
-                <option value="initiative" selected>مبادرة</option>
-              </select>
-            <% } %>
+            <label for="initiativeCategorySelect">محور المبادرة</label>
+            <select id="initiativeCategorySelect" class="form-select">
+              <option value="">اختر المحور</option>
+              <option value="التقنية">التقنية</option>
+              <option value="الأدبية">الأدبية</option>
+              <option value="الأصولية">الأصولية</option>
+              <option value="المهارية">المهارية</option>
+            </select>
           </div>
           <div class="form-group">
-            <label for="pointsAmount">عدد النقاط</label>
-            <select id="pointsAmount" class="form-select">
+            <label for="initiativeAmount">عدد النقاط</label>
+            <select id="initiativeAmount" class="form-select">
               <option value="">اختر عدد النقاط</option>
               <option value="5">5</option>
               <option value="10">10</option>
@@ -144,22 +141,12 @@
               <option value="40">40</option>
             </select>
           </div>
-          <div class="form-group" id="initiativeCategoryGroup">
-            <label for="pointsReason">محور المبادرة</label>
-            <select id="pointsReason" class="form-select">
-              <option value="">اختر المحور</option>
-              <option value="التقنية">التقنية</option>
-              <option value="الأدبية">الأدبية</option>
-              <option value="الأصولية">الأصولية</option>
-              <option value="المهارية">المهارية</option>
-            </select>
-          </div>
 
           <div class="form-group" style="display:flex; gap:10px;">
-            <button type="button" id="addPointsBtn" class="btn btn-gold" style="flex:1;">إضافة النقاط</button>
-            <button type="button" id="subtractPointsBtn" class="btn btn-danger-outline" style="flex:1;">خصم النقاط</button>
+            <button type="button" id="addInitiativeBtn" class="btn btn-gold" style="flex:1;">تسجيل المبادرة</button>
+            <button type="button" id="subtractInitiativeBtn" class="btn btn-danger-outline" style="flex:1;">خصم النقاط</button>
           </div>
-          <p class="form-msg" id="pointsMsg"></p>
+          <p class="form-msg" id="initiativeMsg"></p>
         </form>
       </div>
 
