@@ -13,16 +13,14 @@ const path = require("path");
 const mysql = require("mysql2/promise");
 const { normalizeArabic } = require("../utils/arabicNormalize");
 
-// الأولوية: 4 مجموعات | الفئة العليا: 4 مجموعات
+// 6 مجموعات، جميعها ضمن فئة واحدة
 const GROUPS_WITH_CATEGORY = [
-  { name: "مجموعة البناء",  category: "الأولوية" },
-  { name: "مجموعة العطاء", category: "الأولوية" },
-  { name: "مجموعة النماء",  category: "الأولوية" },
-  { name: "مجموعة الإخاء", category: "الأولوية" },
-  { name: "مجموعة الطموح", category: "الفئة العليا" },
-  { name: "مجموعة الكفاح", category: "الفئة العليا" },
-  { name: "مجموعة الصروح", category: "الفئة العليا" },
-  { name: "مجموعة الفلاح", category: "الفئة العليا" },
+  { name: "أبو زامل",      category: "الأولوية" },
+  { name: "أبو عبدالرحمن", category: "الأولوية" },
+  { name: "أبو جبر",        category: "الأولوية" },
+  { name: "أبو محمد",       category: "الأولوية" },
+  { name: "أبو عبدالله",    category: "الأولوية" },
+  { name: "أبو يوسف",       category: "الأولوية" },
 ];
 const GROUP_NAMES = GROUPS_WITH_CATEGORY.map((g) => g.name);
 
