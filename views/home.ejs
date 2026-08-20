@@ -2,53 +2,6 @@
 
   <section class="app-section active">
 
-    <!-- =========================================================
-         نبذة تعريفية عن النادي
-         ========================================================= -->
-    <div class="intro-card">
-      <h2 class="section-title">عن نادي القيروان</h2>
-      <p class="section-desc intro-text">
-        نادي القيروان الموسمي هو بيئة تعليمية وتربوية متكاملة، صُممت لتمنح الطلاب تجربة صيفية استثنائية تجمع بين التعلم، والمرح، والمنافسة، واكتساب المهارات. نؤمن بأن كل طالب يمتلك موهبة تستحق أن تُكتشف، وكل إنجاز يستحق أن يُحتفى به، ولذلك نوفر برامج متنوعة، وتحديات ممتعة، وأنشطة نوعية تصنع أثرًا يبقى.
-      </p>
-
-      <div class="club-quick-facts">
-        <div class="quick-fact">
-          <span class="quick-fact-value"><%= settings.total_weeks %></span>
-          <span class="quick-fact-label">أسابيع النادي</span>
-        </div>
-        <div class="quick-fact">
-          <span class="quick-fact-value"><%= settings.days_per_week %></span>
-          <span class="quick-fact-label">أيام النادي أسبوعياً</span>
-        </div>
-        <div class="quick-fact">
-          <span class="quick-fact-value"><%= settings.season_name %></span>
-          <span class="quick-fact-label"></span>
-        </div>
-      </div>
-
-      <div class="club-days-row">
-        <% clubDays.forEach((day) => { %>
-          <span class="club-day-chip"><%= day %></span>
-        <% }) %>
-        <span class="club-days-note">يبدأ النادي من 17 ربيع الآخر 1448هـ لمدة 3 أسابيع</span>
-      </div>
-    </div>
-
-    <!-- =========================================================
-         السؤال اليومي
-         ========================================================= -->
-    <div class="daily-question-card">
-      <div class="daily-question-icon">❓</div>
-      <div>
-        <h3 class="daily-question-title">السؤال اليومي</h3>
-        <% if (dailyQuestion) { %>
-          <p class="daily-question-text"><%= dailyQuestion %></p>
-        <% } else { %>
-          <p class="daily-question-text daily-question-empty">لا يوجد سؤال يومي اليوم</p>
-        <% } %>
-      </div>
-    </div>
-
     <h2 class="section-title">نظرة عامة على النادي</h2>
     <p class="section-desc">إحصائية شاملة عن نادي القيروان وأداء الطلاب في جميع البرامج</p>
 
@@ -75,22 +28,8 @@
       </div>
     </div>
 
-    <h3 class="section-title" style="font-size:19px; margin-top:10px;">برامج النادي</h3>
-    <p class="section-desc">كل طالب يتابَع أداؤه عبر المحاور الرئيسية طوال الموسم</p>
-
-    <div class="programs-grid">
-      <div class="program-card knowledge">
-        <h3>🟦 البرنامج الذاتي</h3>
-        <p>يشمل مجموعة من البرامج والموضوعات الهادفة التي تنمّي الفكر والمهارات، مثل الذكاء الاصطناعي، والآداب، وبرنامج "صلاتي سعادتي"، إلى جانب أنشطة تعليمية وتفاعلية تعزز المعرفة والقيم لدى الطالب.</p>
-      </div>
-      <div class="program-card initiatives">
-        <h3>🌟 التميز والمبادرات</h3>
-        <p>يُكرّم الطلاب المتميزين وأصحاب المبادرات الإيجابية، ويشجع على الإبداع، والتعاون، وتحمل المسؤولية، من خلال منح إنجازات وأوسمة تعكس أثر الطالب داخل النادي وخارجه.</p>
-      </div>
-    </div>
-
     <!-- =========================================================
-         المتصدرون: أفضل 5 من كل فئة
+         المتصدرون
          ========================================================= -->
     <h3 class="section-title" style="font-size:19px; margin-top:36px;">🏆 المتصدرون</h3>
     <p class="section-desc">أفضل 10 طلاب حسب إجمالي النقاط</p>
