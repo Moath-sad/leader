@@ -7,8 +7,17 @@
     </div>
     <p class="section-desc">
       قائمة الطلاب الذين لم يُنجزوا أحد متطلبات الذاتي أو لم يحضروا أحد أيام الأسبوع المحدد.
-      اضغط زر "إرسال واتساب" بجانب كل طالب — سيفتح واتساب على جهازك برسالة جاهزة، أرسلها من رقمك المسجَّل به (0573568216).
     </p>
+
+    <% if (!whatsappConfigured) { %>
+      <div class="panel-box" style="margin-bottom:18px; border:1.5px solid var(--warning);">
+        <strong>⚠️ الإرسال الرسمي التلقائي غير مفعَّل بعد</strong>
+        <p class="section-desc" style="margin:6px 0 0; font-size:13px;">
+          لم يتم ضبط بيانات WhatsApp Business API (Meta Cloud API) بعد. حالياً يمكنك الإرسال يدوياً فقط عبر زر "wa.me" الذي يفتح واتساب على جهازك.
+          بعد ضبط متغيرات البيئة (WHATSAPP_ACCESS_TOKEN وWHATSAPP_PHONE_NUMBER_ID وWHATSAPP_TEMPLATE_NAME) سيظهر زر "إرسال تلقائي" تلقائياً.
+        </p>
+      </div>
+    <% } %>
 
     <div class="panel-box" style="margin-bottom:18px;">
       <div class="form-group" style="margin-bottom:0;">
@@ -26,8 +35,15 @@
         <p class="empty-note">لا يوجد طلاب متأخرون عن متطلبات هذا الأسبوع 🎉</p>
       </div>
     <% } else { %>
+      <% if (whatsappConfigured) { %>
+        <div class="panel-box" style="margin-bottom:18px;">
+          <button type="button" id="sendAllBtn" class="btn btn-primary" style="width:100%;">🤖 إرسال تلقائي للجميع (<%= list.length %> طالب)</button>
+          <p class="form-msg" id="sendAllMsg"></p>
+        </div>
+      <% } %>
+
       <div class="data-table-wrapper">
-        <table class="data-table">
+        <table class="data-table" id="remindersTable">
           <thead>
             <tr>
               <th>#</th>
@@ -35,7 +51,8 @@
               <th>الأسرة</th>
               <th>الجوال</th>
               <th>سبب التذكير</th>
-              <th>إرسال</th>
+              <th>إرسال يدوي</th>
+              <% if (whatsappConfigured) { %><th>إرسال تلقائي</th><% } %>
             </tr>
           </thead>
           <tbody>
@@ -48,7 +65,7 @@
               const intlPhone = s.phone && /^05\d{8}$/.test(s.phone) ? '966' + s.phone.slice(1) : null;
               const waLink = intlPhone ? `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}` : null;
             %>
-              <tr>
+              <tr data-student-id="<%= s.id %>">
                 <td><%= i + 1 %></td>
                 <td><%= s.name %></td>
                 <td><%= s.group_name %></td>
@@ -56,11 +73,16 @@
                 <td style="font-size:12px;"><%= reasonText %></td>
                 <td>
                   <% if (waLink) { %>
-                    <a href="<%= waLink %>" target="_blank" class="btn btn-gold btn-small">📤 إرسال واتساب</a>
+                    <a href="<%= waLink %>" target="_blank" class="btn btn-gold btn-small">📤 wa.me</a>
                   <% } else { %>
-                    <span class="empty-note" style="font-size:12px;">لا يوجد رقم جوال مسجَّل</span>
+                    <span class="empty-note" style="font-size:12px;">لا يوجد رقم جوال</span>
                   <% } %>
                 </td>
+                <% if (whatsappConfigured) { %>
+                  <td>
+                    <button type="button" class="btn btn-primary btn-small btn-send-auto" data-student-id="<%= s.id %>" <%= s.phone ? '' : 'disabled' %>>🤖 إرسال</button>
+                  </td>
+                <% } %>
               </tr>
             <% }) %>
           </tbody>
@@ -70,3 +92,65 @@
   </section>
 
 <%- include('partials/footer') %>
+
+<script>
+  const weekNumber = <%= weekNumber %>;
+
+  document.querySelectorAll(".btn-send-auto").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      btn.textContent = "جارٍ الإرسال...";
+      try {
+        const res = await fetch("/api/supervisor/weekly-reminders/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentId: btn.dataset.studentId, weekNumber }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          btn.textContent = "✅ أُرسلت";
+        } else {
+          alert(data.message || "فشل الإرسال");
+          btn.textContent = "🤖 إرسال";
+          btn.disabled = false;
+        }
+      } catch (e) {
+        alert("حدث خطأ في الاتصال بالخادم");
+        btn.textContent = "🤖 إرسال";
+        btn.disabled = false;
+      }
+    });
+  });
+
+  const sendAllBtn = document.getElementById("sendAllBtn");
+  if (sendAllBtn) {
+    sendAllBtn.addEventListener("click", async () => {
+      if (!confirm("سيتم إرسال رسالة تذكير لكل طالب في القائمة. متابعة؟")) return;
+      sendAllBtn.disabled = true;
+      sendAllBtn.textContent = "جارٍ الإرسال للجميع...";
+      const msg = document.getElementById("sendAllMsg");
+      try {
+        const res = await fetch("/api/supervisor/weekly-reminders/send-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ weekNumber }),
+        });
+        const data = await res.json();
+        if (!data.success) {
+          msg.className = "form-msg error";
+          msg.textContent = data.message || "حدث خطأ";
+        } else {
+          msg.className = "form-msg success";
+          msg.textContent = `تم إرسال ${data.sent} رسالة بنجاح` + (data.failed.length ? `، وفشل ${data.failed.length} (${data.failed.map(f => f.name).join('، ')})` : '');
+          document.querySelectorAll(".btn-send-auto").forEach((b) => { b.textContent = "✅ أُرسلت"; b.disabled = true; });
+        }
+      } catch (e) {
+        msg.className = "form-msg error";
+        msg.textContent = "حدث خطأ في الاتصال بالخادم";
+      } finally {
+        sendAllBtn.disabled = false;
+        sendAllBtn.textContent = "🤖 إرسال تلقائي للجميع";
+      }
+    });
+  }
+</script>

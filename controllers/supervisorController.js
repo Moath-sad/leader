@@ -12,6 +12,7 @@ const studentModel = require("../models/studentModel");
 const groupModel = require("../models/groupModel");
 const sessionModel = require("../models/sessionModel");
 const archiveModel = require("../models/archiveModel");
+const whatsappService = require("../services/whatsappService");
 
 // الإدارة: تحكم كامل (كل ما كان متاحاً سابقاً بدون أي تعديل)
 // المشرفون: تحضير (باركود + يدوي) + إضافة نقاط مبادرة فقط مع سبب إلزامي
@@ -509,7 +510,85 @@ async function showWeeklyReminders(req, res, next) {
       activeNav: "supervisor",
       weekNumber,
       list,
+      whatsappConfigured: whatsappService.isConfigured(),
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* -------- بناء نص/معاملات رسالة التذكير لطالب معيّن -------- */
+function buildReminderParams(student, weekNumber) {
+  const reasons = [];
+  if (student.missedDays > 0) reasons.push("لم يحضر يوماً على الأقل من أيام الأسبوع");
+  if (student.missedTasks > 0) reasons.push("لم يُنجز أحد متطلبات الذاتي");
+  return [student.name, student.group_name, reasons.join(" و "), String(weekNumber)];
+}
+
+/* -------- API: إرسال تذكير واتساب رسمي لطالب واحد -------- */
+async function sendWeeklyReminder(req, res, next) {
+  try {
+    const weekNumber = Number(req.body.weekNumber);
+    const studentId = Number(req.body.studentId);
+    if (!weekNumber || !studentId) {
+      return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
+    }
+
+    const list = await studentModel.getWeeklyReminderList(weekNumber);
+    const student = list.find((s) => s.id === studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "الطالب غير موجود ضمن قائمة التذكير لهذا الأسبوع" });
+    }
+    if (!student.phone) {
+      return res.status(400).json({ success: false, message: "لا يوجد رقم جوال مسجَّل لهذا الطالب" });
+    }
+
+    const result = await whatsappService.sendTemplateMessage(student.phone, buildReminderParams(student, weekNumber));
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: result.error });
+    }
+
+    await pool.query(
+      "INSERT INTO activity_log (action) VALUES (?)",
+      [`إرسال تذكير واتساب رسمي لـ ${student.name} (الأسبوع ${weekNumber})`]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* -------- API: إرسال تذكير واتساب رسمي لكل طلاب القائمة دفعة واحدة -------- */
+async function sendAllWeeklyReminders(req, res, next) {
+  try {
+    const weekNumber = Number(req.body.weekNumber);
+    if (!weekNumber) {
+      return res.status(400).json({ success: false, message: "أدخل رقم أسبوع صحيح" });
+    }
+
+    const list = await studentModel.getWeeklyReminderList(weekNumber);
+    const results = { sent: 0, failed: [] };
+
+    for (const student of list) {
+      if (!student.phone) {
+        results.failed.push({ name: student.name, reason: "لا يوجد رقم جوال" });
+        continue;
+      }
+      const result = await whatsappService.sendTemplateMessage(student.phone, buildReminderParams(student, weekNumber));
+      if (result.success) {
+        results.sent++;
+      } else {
+        results.failed.push({ name: student.name, reason: result.error });
+      }
+    }
+
+    await pool.query(
+      "INSERT INTO activity_log (action) VALUES (?)",
+      [`إرسال تذكيرات واتساب جماعية للأسبوع ${weekNumber}: نجح ${results.sent}، فشل ${results.failed.length}`]
+    );
+
+    res.json({ success: true, ...results });
   } catch (err) {
     next(err);
   }
@@ -536,4 +615,6 @@ module.exports = {
   showPointsArchive,
   updateStudentPhone,
   showWeeklyReminders,
+  sendWeeklyReminder,
+  sendAllWeeklyReminders,
 };

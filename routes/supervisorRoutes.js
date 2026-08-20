@@ -20,6 +20,8 @@ router.post("/api/supervisor/students", requireAdminApi, supervisorController.ad
 router.post("/api/supervisor/students/move", requireAdminApi, supervisorController.moveStudent);
 router.post("/api/supervisor/students/delete", requireAdminApi, supervisorController.deleteStudent);
 router.post("/api/supervisor/students/phone", requireAdminApi, supervisorController.updateStudentPhone);
+router.post("/api/supervisor/weekly-reminders/send", requireAdminApi, supervisorController.sendWeeklyReminder);
+router.post("/api/supervisor/weekly-reminders/send-all", requireAdminApi, supervisorController.sendAllWeeklyReminders);
 router.post("/api/supervisor/points", requireSupervisorApi, supervisorController.addPoints);
 router.post("/api/supervisor/attendance", requireSupervisorApi, supervisorController.markAttendanceManual);
 router.post("/api/supervisor/self-achievements", requireAdminApi, supervisorController.setSelfAchievementStatus);
