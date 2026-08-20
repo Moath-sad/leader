@@ -79,31 +79,7 @@
       pointer-events: auto;
     }
 
-    /* ===== شريحة 1: الترحيب ===== */
-    .slide-welcome { background: linear-gradient(135deg, #0d1f35 0%, #1a3a5c 60%, #0d2a4a 100%); }
-    .welcome-logo  { height: 130px; margin-bottom: 28px; filter: drop-shadow(0 4px 24px rgba(245,197,24,0.4)); }
-    .welcome-title { font-size: 3.2rem; font-weight: 900; color: var(--gold); text-align: center; line-height: 1.2; }
-    .welcome-sub   { font-size: 1.6rem; color: rgba(255,255,255,0.8); margin-top: 12px; text-align: center; }
-    .welcome-chips { display: flex; gap: 16px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
-    .welcome-chip  {
-      padding: 10px 24px; border-radius: 50px;
-      background: rgba(245,197,24,0.15);
-      border: 2px solid rgba(245,197,24,0.4);
-      font-size: 1.2rem; color: var(--gold); font-weight: 600;
-    }
-    .welcome-programs {
-      display: flex; gap: 20px; margin-top: 40px; flex-wrap: wrap; justify-content: center;
-    }
-    .prog-badge {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.07); border-radius: 16px;
-      padding: 18px 28px; min-width: 130px;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-    .prog-badge-icon { font-size: 2.2rem; }
-    .prog-badge-label { font-size: 1rem; color: rgba(255,255,255,0.85); font-weight: 600; }
-
-    /* ===== شريحة 2: المتصدرون ===== */
+    /* ===== شريحة 1: المتصدرون ===== */
     .slide-leaders { background: linear-gradient(160deg, #0f2236 0%, #1a3455 100%); }
     .slide-title {
       font-size: 2rem; font-weight: 900; color: var(--gold);
@@ -125,29 +101,7 @@
     .leader-group { font-size: 0.85rem; color: rgba(255,255,255,0.55); }
     .leader-pts   { font-size: 1.2rem; font-weight: 900; color: var(--gold); }
 
-    /* ===== شريحة 3: ترتيب المجموعات ===== */
-    .slide-groups  { background: linear-gradient(150deg, #102030 0%, #1c3a58 100%); }
-    .groups-display-grid {
-      display: grid; grid-template-columns: 1fr; gap: 10px;
-      width: 100%; max-width: 700px;
-    }
-    .group-display-card {
-      display: flex; align-items: center; gap: 16px;
-      padding: 14px 20px; border-radius: 14px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .group-display-card.g1 { border-color: rgba(255,213,48,0.5); background: rgba(255,213,48,0.12); }
-    .group-display-card.g2 { border-color: rgba(200,200,200,0.4); background: rgba(200,200,200,0.08); }
-    .group-display-card.g3 { border-color: rgba(200,130,50,0.4);  background: rgba(200,130,50,0.08); }
-    .gd-rank   { font-size: 2rem; font-weight: 900; color: var(--gold); width: 40px; text-align: center; }
-    .gd-info   { flex: 1; }
-    .gd-name   { font-size: 1.1rem; font-weight: 700; }
-    .gd-cat    { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
-    .gd-pts    { font-size: 1.4rem; font-weight: 900; color: var(--gold); }
-    .gd-medal  { font-size: 1.8rem; }
-
-    /* ===== شريحة 4: إحصائيات اليوم ===== */
+    /* ===== شريحة 2: إحصائيات اليوم ===== */
     .slide-stats { background: linear-gradient(140deg, #0c1e33 0%, #1b3654 100%); }
     .stats-display-grid {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
@@ -168,34 +122,6 @@
       border-radius: 16px; padding: 16px 40px;
       font-size: 1.3rem; font-weight: 700; color: var(--gold); text-align: center;
     }
-
-    /* ===== شريحة 5: البرامج ===== */
-    .slide-programs { background: linear-gradient(145deg, #0e1f33 0%, #1d3a58 100%); }
-    .programs-display-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
-      width: 100%; max-width: 1050px;
-    }
-    .prog-display-card {
-      border-radius: 18px; padding: 28px 28px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .pdc-icon  { font-size: 2.4rem; }
-    .pdc-title { font-size: 1.3rem; font-weight: 800; color: var(--gold); }
-    .pdc-desc  { font-size: 0.95rem; color: rgba(255,255,255,0.72); line-height: 1.6; }
-
-    /* ===== شريحة 6: السؤال اليومي ===== */
-    .slide-question { background: linear-gradient(150deg, #12233a 0%, #22406a 100%); }
-    .question-card {
-      display: flex; flex-direction: column; align-items: center; gap: 24px;
-      max-width: 900px; text-align: center;
-    }
-    .question-icon { font-size: 3.2rem; }
-    .question-text {
-      font-size: 2.1rem; font-weight: 800; line-height: 1.6; color: var(--white);
-    }
-    .question-empty { color: rgba(255,255,255,0.55); font-size: 1.4rem; font-weight: 600; }
 
     /* زر fullscreen */
     #fsBtn {
@@ -228,39 +154,14 @@
 <!-- الشرائح -->
 <div class="slides-wrapper">
 
-  <!-- ===== شريحة 1: الترحيب ===== -->
-  <div class="slide slide-welcome active" id="slide-0">
-    <img src="/img/logo.png" class="welcome-logo" alt="شعار النادي">
-    <div class="welcome-title">نادي القيروان الموسمي</div>
-    <div class="welcome-sub"><%= settings.season_name %> • يبدأ من 17 ربيع الآخر 1448هـ</div>
-    <div class="welcome-chips">
-      <% clubDays.forEach(d => { %>
-        <div class="welcome-chip">📅 <%= d %></div>
-      <% }) %>
-      <div class="welcome-chip">🏫 3 أسابيع</div>
-    </div>
-    <div class="welcome-programs">
-      <div class="prog-badge"><span class="prog-badge-icon">🟦</span><span class="prog-badge-label">المعرفي</span></div>
-      <div class="prog-badge"><span class="prog-badge-icon">⚽</span><span class="prog-badge-label">الرياضي</span></div>
-      <div class="prog-badge"><span class="prog-badge-icon">🎭</span><span class="prog-badge-label">الترفيهي</span></div>
-      <div class="prog-badge"><span class="prog-badge-icon">🌟</span><span class="prog-badge-label">التميز</span></div>
-    </div>
-  </div>
-
-  <!-- ===== شريحة 2: المتصدرون ===== -->
-  <div class="slide slide-leaders" id="slide-1">
+  <!-- ===== شريحة 1: المتصدرون ===== -->
+  <div class="slide slide-leaders active" id="slide-0">
     <div class="slide-title">🏆 المتصدرون</div>
     <div id="leadersList"></div>
   </div>
 
-  <!-- ===== شريحة 3: ترتيب المجموعات ===== -->
-  <div class="slide slide-groups" id="slide-2">
-    <div class="slide-title">📊 ترتيب المجموعات</div>
-    <div class="groups-display-grid" id="groupsDisplay"></div>
-  </div>
-
-  <!-- ===== شريحة 4: إحصائيات اليوم ===== -->
-  <div class="slide slide-stats" id="slide-3">
+  <!-- ===== شريحة 2: إحصائيات اليوم ===== -->
+  <div class="slide slide-stats" id="slide-1">
     <div class="slide-title">📈 نظرة عامة على النادي</div>
     <div class="stats-display-grid">
       <div class="stat-display-card">
@@ -297,52 +198,10 @@
     <div class="session-banner" id="sessionBanner">⏳ جارٍ تحميل الجلسة...</div>
   </div>
 
-  <!-- ===== شريحة 5: البرامج ===== -->
-  <div class="slide slide-programs" id="slide-4">
-    <div class="slide-title">🎯 برامج النادي الأربعة</div>
-    <div class="programs-display-grid">
-      <div class="prog-display-card">
-        <span class="pdc-icon">🟦</span>
-        <div class="pdc-title">البرنامج المعرفي</div>
-        <div class="pdc-desc">يشمل برامج هادفة تنمّي الفكر والمهارات، مثل الذكاء الاصطناعي، والآداب، وبرنامج "صلاتي سعادتي"، وأنشطة تعليمية وتفاعلية.</div>
-      </div>
-      <div class="prog-display-card">
-        <span class="pdc-icon">⚽️</span>
-        <div class="pdc-title">البرنامج الرياضي</div>
-        <div class="pdc-desc">يعزز اللياقة البدنية وروح المنافسة عبر الألعاب والبطولات والأنشطة الرياضية في بيئة تشجع التعاون والمرح.</div>
-      </div>
-      <div class="prog-display-card">
-        <span class="pdc-icon">🎭</span>
-        <div class="pdc-title">البرنامج الترفيهي</div>
-        <div class="pdc-desc">تجربة مليئة بالمتعة عبر الألعاب الجماعية والمسابقات والأنشطة الإبداعية التي تنمي الثقة بالنفس وروح الفريق.</div>
-      </div>
-      <div class="prog-display-card">
-        <span class="pdc-icon">🌟</span>
-        <div class="pdc-title">التميز والمبادرات</div>
-        <div class="pdc-desc">يُكرّم الطلاب المتميزين وأصحاب المبادرات الإيجابية ويشجع على الإبداع والتعاون وتحمل المسؤولية.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== شريحة 6: السؤال اليومي ===== -->
-  <div class="slide slide-question" id="slide-5">
-    <div class="question-card">
-      <div class="question-icon">❓</div>
-      <div class="slide-title" style="margin-bottom:0;">السؤال اليومي</div>
-      <div class="question-text" id="dailyQuestionText">
-        <% if (dailyQuestion) { %>
-          <%= dailyQuestion %>
-        <% } else { %>
-          <span class="question-empty">لا يوجد سؤال يومي اليوم</span>
-        <% } %>
-      </div>
-    </div>
-  </div>
-
 </div><!-- end slides-wrapper -->
 
 <script>
-  const SLIDE_COUNT   = 6;
+  const SLIDE_COUNT   = 2;
   const SLIDE_DURATION = 7000; // مللي ثانية
   const REFRESH_INTERVAL = 60000; // تحديث البيانات كل دقيقة
 
@@ -411,18 +270,6 @@
           <span class="leader-pts">${s.total_points}</span>
         </div>`).join('');
 
-      /* المجموعات */
-      const medals = ['🥇','🥈','🥉'];
-      document.getElementById('groupsDisplay').innerHTML = data.groups.map((g, i) => `
-          <div class="group-display-card ${i < 3 ? 'g'+(i+1) : ''}">
-            <span class="gd-rank">${medals[i] || i+1}</span>
-            <div class="gd-info">
-              <div class="gd-name">${g.name}</div>
-              <div class="gd-cat">${g.member_count} طالب</div>
-            </div>
-            <span class="gd-pts">${g.total_points}</span>
-          </div>`).join('');
-
       /* الإحصائيات */
       document.getElementById('statStudents').textContent   = data.stats.totalStudents;
       document.getElementById('statAttendance').textContent = data.stats.attendanceRate;
@@ -430,12 +277,6 @@
       document.getElementById('statKnowledge').textContent  = data.stats.totalKnowledge;
       document.getElementById('statSports').textContent     = data.stats.totalSports;
       document.getElementById('statCultural').textContent   = data.stats.totalCultural;
-
-      /* السؤال اليومي */
-      const qEl = document.getElementById('dailyQuestionText');
-      qEl.innerHTML = data.dailyQuestion
-        ? data.dailyQuestion
-        : '<span class="question-empty">لا يوجد سؤال يومي اليوم</span>';
 
       /* الجلسة الحالية */
       if (data.currentSession) {
