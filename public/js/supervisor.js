@@ -2,28 +2,20 @@
    public/js/supervisor.js
    منطق لوحة المشرفين:
    - إضافة / خصم نقاط (AJAX)
-   - تسجيل حضور يدوي (AJAX)
+   - قائمة الحضور بالجملة حسب الأسر (AJAX)
    - عرض/طباعة باركود QR لكل طالب
-   - تشغيل الكاميرا ومسح الباركود لتسجيل حضور تلقائي (AJAX)
    ========================================================= */
-
-let qrStream = null;
-let qrAnimationFrame = null;
-let qrScannerActive = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   setupStudentSearchSelects();
   setupPointsForm();
-  setupAttendanceForm();
   setupKnowledgeTasksPanel();
   setupBarcodeModal();
-  setupScanner();
   setupGlobalToggleScores();
   setupAttendanceListByFamily();
   setupAddStudentForm();
   setupDeleteStudentForm();
   setupMoveStudentForm();
-  autoStartScanIfRequested();
 });
 
 /* =========================================================
@@ -258,21 +250,6 @@ function attachAttendanceRowHandlers(sessionSelect) {
 }
 
 /* =========================================================
-   0.5) فتح الكاميرا تلقائياً عند الوصول عبر رابط ?scan=1
-   (اختصار سريع للتحضير بدون الحاجة للنزول والضغط يدوياً)
-   ========================================================= */
-function autoStartScanIfRequested() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("scan") !== "1") return;
-
-  const scanBtn = document.getElementById("startScanBtn");
-  if (!scanBtn) return;
-
-  scanBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-  scanBtn.click();
-}
-
-/* =========================================================
    زر إخفاء / إظهار أعمدة النقاط في جدول المشرف فقط
    ========================================================= */
 function setupToggleScores() {
@@ -353,7 +330,6 @@ function setupStudentSearchSelects() {
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
 
   setupStudentSearchSelect("initiativeStudentSearch", "initiativeStudentResults", "initiativeStudentSelect", students);
-  setupStudentSearchSelect("attendanceStudentSearch", "attendanceStudentResults", "attendanceStudentSelect", students);
   setupStudentSearchSelect("tasksStudentSearch", "tasksStudentResults", "tasksStudentSelect", students, (id) => {
     loadKnowledgeTasks(id);
   });
@@ -499,47 +475,6 @@ function setupPointsForm() {
 }
 
 /* =========================================================
-   2) تسجيل حضور يدوي لجلسة محددة
-   ========================================================= */
-function setupAttendanceForm() {
-  const submitBtn = document.getElementById("attendanceSubmitBtn");
-  const msg = document.getElementById("attendanceMsg");
-
-  submitBtn.addEventListener("click", async () => {
-    const studentId = document.getElementById("attendanceStudentSelect").value;
-    const sessionId = document.getElementById("attendanceSessionSelect").value;
-    const status = document.getElementById("attendanceStatusSelect").value;
-    const studentName = document.getElementById("attendanceStudentSelect").dataset.name;
-
-    if (!studentId) {
-      showMsg(msg, "اختر طالباً أولاً", "error");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/supervisor/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentId, status, sessionId }),
-      });
-      const data = await res.json();
-
-      if (!data.success) {
-        showMsg(msg, data.message || "حدث خطأ", "error");
-        return;
-      }
-
-      const statusMsg = status === "غايب" ? `تم تسجيل غياب ${studentName} ✅`
-        : status === "متأخر" ? `تم تسجيل تأخر ${studentName} ✅`
-        : `تم تسجيل حضور ${studentName} ✅`;
-      showMsg(msg, statusMsg, "success");
-    } catch (err) {
-      showMsg(msg, "حدث خطأ في الاتصال بالخادم", "error");
-    }
-  });
-}
-
-/* =========================================================
    2.5) تقييم متطلبات البرنامج المعرفي
    المشرف هو من يحدّد إنجاز كل متطلب (الطالب يخبره شخصياً)
    ========================================================= */
@@ -547,9 +482,11 @@ function setupKnowledgeTasksPanel() {
   loadTaskConfig();
   const saveBtn = document.getElementById("saveTaskConfigBtn");
   if (saveBtn) saveBtn.addEventListener("click", saveTaskConfig);
+  const addBtn = document.getElementById("addTaskBtn");
+  if (addBtn) addBtn.addEventListener("click", addTask);
 }
 
-/* تحميل إعدادات الذاتي الأسبوعية (16 أسبوعاً) وعرضها في القسم العالمي */
+/* تحميل إعدادات الذاتي الأسبوعية (متطلبان أو ثلاثة لكل أسبوع) وعرضها مجمَّعة */
 async function loadTaskConfig() {
   const configBox = document.getElementById("taskConfigList");
   if (!configBox) return;
@@ -559,41 +496,99 @@ async function loadTaskConfig() {
     const data = await res.json();
     if (!data.success) return;
 
-    const renderRow = (t) => `
-      <div class="task-config-row">
-        <span class="task-config-title">الأسبوع ${t.week_number}</span>
-        <input type="text" class="task-config-title-input" data-week="${t.week_number}"
-          placeholder="عنوان المتطلب" value="${t.title}">
-        <input type="number" class="task-config-input" data-week="${t.week_number}"
-          min="1" placeholder="0" value="${t.points > 0 ? t.points : ""}">
-        <span class="task-points-label">نقطة</span>
-      </div>
-    `;
+    const byWeek = {};
+    data.config.forEach((t) => {
+      if (!byWeek[t.week_number]) byWeek[t.week_number] = [];
+      byWeek[t.week_number].push(t);
+    });
 
-    configBox.innerHTML = data.config.map(renderRow).join("");
+    configBox.innerHTML = Object.keys(byWeek).map((week) => `
+      <div class="task-config-group-title">الأسبوع ${week}</div>
+      ${byWeek[week].map((t) => `
+        <div class="task-config-row">
+          <input type="text" class="task-config-title-input" data-task-id="${t.id}"
+            placeholder="عنوان المتطلب" value="${t.title}">
+          <input type="number" class="task-config-input" data-task-id="${t.id}"
+            min="1" placeholder="0" value="${t.points > 0 ? t.points : ""}">
+          <span class="task-points-label">نقطة</span>
+          <button type="button" class="btn-delete-task" data-task-id="${t.id}" title="حذف المتطلب">🗑️</button>
+        </div>
+      `).join("")}
+    `).join("");
+
+    configBox.querySelectorAll(".btn-delete-task").forEach((btn) => {
+      btn.addEventListener("click", () => deleteTask(btn.dataset.taskId));
+    });
   } catch (e) {
     configBox.innerHTML = `<p class="form-msg error">تعذر تحميل الإعدادات</p>`;
   }
 }
 
-/* حفظ عنوان ونقاط الذاتي لكل أسبوع */
+/* إضافة متطلب جديد لأسبوع مختار */
+async function addTask() {
+  const weekSelect = document.getElementById("addTaskWeekSelect");
+  const msg = document.getElementById("taskConfigMsg");
+  const weekNumber = Number(weekSelect.value);
+
+  try {
+    const res = await fetch("/api/supervisor/self-tasks/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weekNumber }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showMsg(msg, data.message || "حدث خطأ", "error");
+      return;
+    }
+    showMsg(msg, "تمت إضافة متطلب جديد، عدّل عنوانه ونقاطه ثم احفظ ✅", "success");
+    loadTaskConfig();
+  } catch (e) {
+    showMsg(msg, "حدث خطأ في الاتصال", "error");
+  }
+}
+
+/* حذف متطلب (يخصم النقاط ممن أنجزه أولاً) */
+async function deleteTask(taskId) {
+  const msg = document.getElementById("taskConfigMsg");
+  if (!confirm("هل تريد حذف هذا المتطلب؟ سيُخصَم من كل طالب أنجزه.")) return;
+
+  try {
+    const res = await fetch("/api/supervisor/self-tasks/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showMsg(msg, data.message || "حدث خطأ", "error");
+      return;
+    }
+    showMsg(msg, "تم حذف المتطلب ✅", "success");
+    loadTaskConfig();
+  } catch (e) {
+    showMsg(msg, "حدث خطأ في الاتصال", "error");
+  }
+}
+
+/* حفظ عنوان ونقاط كل متطلبات الذاتي الحالية */
 async function saveTaskConfig() {
-  const pointInputs = document.querySelectorAll(".task-config-input");
+  const titleInputs = document.querySelectorAll(".task-config-title-input");
   const saveBtn = document.getElementById("saveTaskConfigBtn");
   const msg = document.getElementById("taskConfigMsg");
 
-  const configs = Array.from(pointInputs).map((inp) => {
-    const week = inp.dataset.week;
-    const titleInput = document.querySelector(`.task-config-title-input[data-week="${week}"]`);
+  const configs = Array.from(titleInputs).map((titleInput) => {
+    const taskId = titleInput.dataset.taskId;
+    const pointInput = document.querySelector(`.task-config-input[data-task-id="${taskId}"]`);
     return {
-      weekNumber: Number(week),
-      title: titleInput ? titleInput.value.trim() : "",
-      points: Number(inp.value) || 0,
+      taskId: Number(taskId),
+      title: titleInput.value.trim(),
+      points: pointInput ? Number(pointInput.value) || 0 : 0,
     };
   });
 
   if (configs.some((c) => c.points <= 0 || !c.title)) {
-    showMsg(msg, "أدخل عنواناً ونقاطاً لكل أسبوع", "error");
+    showMsg(msg, "أدخل عنواناً ونقاطاً لكل متطلب", "error");
     return;
   }
 
@@ -629,30 +624,39 @@ async function loadKnowledgeTasks(studentId) {
       return;
     }
 
-    const weeks = data.student.self_achievements;
-    if (!weeks.length) {
-      list.innerHTML = `<p class="empty-note">لا توجد أسابيع معرَّفة بعد</p>`;
+    const tasks = data.student.self_achievements;
+    if (!tasks.length) {
+      list.innerHTML = `<p class="empty-note">لا توجد متطلبات معرَّفة بعد</p>`;
       return;
     }
 
-    list.innerHTML = weeks.map((t) => `
-      <div class="task-toggle-item">
-        <input type="checkbox" class="task-toggle-checkbox" data-week="${t.week_number}" ${t.done ? "checked" : ""}>
-        <span class="task-toggle-title">الأسبوع ${t.week_number}: ${t.title}</span>
-        ${t.done && t.points ? `<span class="task-done-points">${t.points} نقطة</span>` : ""}
-      </div>
+    const byWeek = {};
+    tasks.forEach((t) => {
+      if (!byWeek[t.week_number]) byWeek[t.week_number] = [];
+      byWeek[t.week_number].push(t);
+    });
+
+    list.innerHTML = Object.keys(byWeek).map((week) => `
+      <div class="task-config-group-title">الأسبوع ${week}</div>
+      ${byWeek[week].map((t) => `
+        <div class="task-toggle-item">
+          <input type="checkbox" class="task-toggle-checkbox" data-task-id="${t.task_id}" ${t.done ? "checked" : ""}>
+          <span class="task-toggle-title">${t.title}</span>
+          ${t.done && t.points ? `<span class="task-done-points">${t.points} نقطة</span>` : ""}
+        </div>
+      `).join("")}
     `).join("");
 
     list.querySelectorAll(".task-toggle-checkbox").forEach((checkbox) => {
       checkbox.addEventListener("change", async () => {
-        const weekNumber = checkbox.dataset.week;
+        const taskId = checkbox.dataset.taskId;
         const done = checkbox.checked;
         checkbox.disabled = true;
         try {
           const res = await fetch("/api/supervisor/self-achievements", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ studentId, weekNumber, done }),
+            body: JSON.stringify({ studentId, taskId, done }),
           });
           const data = await res.json();
           if (!data.success) {
@@ -661,7 +665,7 @@ async function loadKnowledgeTasks(studentId) {
           } else {
             const a = data.achievement;
             const action = done ? "تم إنجاز" : "تم إلغاء إنجاز";
-            showMsg(msg, action + " [الأسبوع " + a.week_number + "]" + (done && a.points ? " (+" + a.points + " نقطة) ✅" : " ✅"), "success");
+            showMsg(msg, action + " [" + a.title + "]" + (done && a.points ? " (+" + a.points + " نقطة) ✅" : " ✅"), "success");
             loadKnowledgeTasks(studentId);
           }
         } catch (err) {
@@ -784,148 +788,4 @@ function printSingleBarcode(student) {
     setTimeout(() => win.print(), 400);
   };
   win.document.body.appendChild(script);
-}
-
-/* =========================================================
-   4) تشغيل الكاميرا ومسح الباركود لتسجيل حضور تلقائي
-   ========================================================= */
-function setupScanner() {
-  const scanBtn = document.getElementById("startScanBtn");
-  if (!scanBtn) return;
-
-  scanBtn.addEventListener("click", () => {
-    if (!qrScannerActive) {
-      document.getElementById("scannerWrapper").classList.remove("hidden");
-      scanBtn.textContent = "إيقاف الكاميرا";
-      startBarcodeScanner(handleScannedAttendance);
-    } else {
-      stopBarcodeScanner();
-      document.getElementById("scannerWrapper").classList.add("hidden");
-      scanBtn.textContent = "تشغيل الكاميرا لمسح الباركود";
-      document.getElementById("scannerResult").innerHTML = "";
-    }
-  });
-}
-
-function startBarcodeScanner(onScanSuccess) {
-  const video = document.getElementById("scannerVideo");
-  const canvas = document.getElementById("scannerCanvas");
-  const ctx = canvas.getContext("2d");
-  const statusEl = document.getElementById("scannerStatus");
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    statusEl.textContent = "المتصفح لا يدعم الوصول للكاميرا. جرّب متصفح آخر أو فعّل الأذونات.";
-    statusEl.className = "scanner-status error";
-    return;
-  }
-
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then((stream) => {
-      qrStream = stream;
-      video.srcObject = stream;
-      video.setAttribute("playsinline", true);
-      video.play();
-      qrScannerActive = true;
-      statusEl.textContent = "وجّه الكاميرا نحو باركود الطالب...";
-      statusEl.className = "scanner-status";
-      requestAnimationFrame(() => tickScanner(video, canvas, ctx, onScanSuccess));
-    })
-    .catch((err) => {
-      console.error(err);
-      statusEl.textContent = "تعذّر الوصول إلى الكاميرا. تأكد من السماح بالصلاحية.";
-      statusEl.className = "scanner-status error";
-    });
-}
-
-function tickScanner(video, canvas, ctx, onScanSuccess) {
-  if (!qrScannerActive) return;
-
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    canvas.height = video.videoHeight;
-    canvas.width = video.videoWidth;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: "dontInvert",
-    });
-
-    if (code && code.data) {
-      qrScannerActive = false; // نوقف القراءة لحظياً لحين معالجة النتيجة
-      onScanSuccess(code.data);
-      return;
-    }
-  }
-
-  qrAnimationFrame = requestAnimationFrame(() => tickScanner(video, canvas, ctx, onScanSuccess));
-}
-
-function stopBarcodeScanner() {
-  qrScannerActive = false;
-  if (qrAnimationFrame) cancelAnimationFrame(qrAnimationFrame);
-  if (qrStream) {
-    qrStream.getTracks().forEach((track) => track.stop());
-    qrStream = null;
-  }
-  const video = document.getElementById("scannerVideo");
-  if (video) video.srcObject = null;
-}
-
-/* عند نجاح مسح الباركود: نرسله للخادم ليُسجَّل الحضور تلقائياً */
-async function handleScannedAttendance(code) {
-  const statusEl = document.getElementById("scannerStatus");
-  const resultEl = document.getElementById("scannerResult");
-
-  try {
-    const res = await fetch("/api/supervisor/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ barcode: code }),
-    });
-    const data = await res.json();
-
-    if (!data.success) {
-      statusEl.textContent = data.message || "لم يُعثر على طالب بهذا الباركود.";
-      statusEl.className = "scanner-status error";
-      resultEl.innerHTML = "";
-      resumeScanningAfter(1500);
-      return;
-    }
-
-    const student = data.student;
-
-    if (data.alreadyMarked) {
-      statusEl.textContent = `تم تسجيل حضور ${student.name} مسبقاً اليوم.`;
-      statusEl.className = "scanner-status warning";
-    } else {
-      statusEl.textContent = "تم تسجيل الحضور بنجاح ✅";
-      statusEl.className = "scanner-status success";
-    }
-
-    resultEl.innerHTML = `
-      <div class="scan-result-card">
-        <div class="scan-result-name">${student.name}</div>
-        <div class="scan-result-group">${student.group_name}</div>
-      </div>
-    `;
-
-    resumeScanningAfter(2000);
-  } catch (err) {
-    statusEl.textContent = "حدث خطأ في الاتصال بالخادم";
-    statusEl.className = "scanner-status error";
-    resumeScanningAfter(1500);
-  }
-}
-
-/* إعادة تشغيل قراءة الكاميرا بعد فترة (إن كانت لا تزال مفتوحة) */
-function resumeScanningAfter(delay) {
-  setTimeout(() => {
-    const video = document.getElementById("scannerVideo");
-    const canvas = document.getElementById("scannerCanvas");
-    if (video && video.srcObject) {
-      qrScannerActive = true;
-      const ctx = canvas.getContext("2d");
-      tickScanner(video, canvas, ctx, handleScannedAttendance);
-    }
-  }, delay);
 }

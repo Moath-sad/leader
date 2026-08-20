@@ -1485,6 +1485,16 @@ input, select { font-family: inherit; }
 .task-config-title-input:focus,
 .task-config-input:focus,
 .home-task-config-input:focus { border-color: var(--teal); outline: none; }
+.btn-delete-task {
+  background: none;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
+}
+.btn-delete-task:hover { background: rgba(226, 84, 58, 0.12); }
 .task-config-group-title {
   margin: 14px 0 4px;
   font-size: 13px;

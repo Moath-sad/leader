@@ -375,15 +375,27 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="section-block">
           <h4>📘 إنجاز الذاتي الأسبوعي</h4>
           ${progressBar(doneTasks, totalTasks, "bar-knowledge")}
-          <ul class="task-list scrollable-weeks" style="margin-top:10px;">
-            ${student.self_achievements.map(t => `
-              <li class="${t.done ? "task-done" : "task-pending"}">
-                <span class="task-icon">${t.done ? "✅" : "⭕"}</span>
-                <span>الأسبوع ${t.week_number}: ${t.title}</span>
-                ${t.done && t.points ? `<span class="task-pts-badge">+${t.points}</span>` : ""}
-              </li>
-            `).join("")}
-          </ul>
+          <div class="task-list scrollable-weeks" style="margin-top:10px;">
+            ${(() => {
+              const byWeek = {};
+              student.self_achievements.forEach(t => {
+                if (!byWeek[t.week_number]) byWeek[t.week_number] = [];
+                byWeek[t.week_number].push(t);
+              });
+              return Object.keys(byWeek).map(week => `
+                <div class="attendance-week-title">الأسبوع ${week}</div>
+                <ul class="task-list">
+                  ${byWeek[week].map(t => `
+                    <li class="${t.done ? "task-done" : "task-pending"}">
+                      <span class="task-icon">${t.done ? "✅" : "⭕"}</span>
+                      <span>${t.title}</span>
+                      ${t.done && t.points ? `<span class="task-pts-badge">+${t.points}</span>` : ""}
+                    </li>
+                  `).join("")}
+                </ul>
+              `).join("");
+            })()}
+          </div>
         </div>
 
         <!-- المبادرات -->

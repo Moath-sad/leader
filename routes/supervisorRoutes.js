@@ -20,10 +20,11 @@ router.post("/api/supervisor/students/move", requireAdminApi, supervisorControll
 router.post("/api/supervisor/students/delete", requireAdminApi, supervisorController.deleteStudent);
 router.post("/api/supervisor/points", requireSupervisorApi, supervisorController.addPoints);
 router.post("/api/supervisor/attendance", requireSupervisorApi, supervisorController.markAttendanceManual);
-router.post("/api/supervisor/scan", requireSupervisorApi, supervisorController.scanBarcodeAttendance);
 router.post("/api/supervisor/self-achievements", requireAdminApi, supervisorController.setSelfAchievementStatus);
 router.get("/api/supervisor/self-task-config", requireAdminApi, supervisorController.getSelfTaskConfig);
 router.post("/api/supervisor/self-task-config", requireAdminApi, supervisorController.saveSelfTaskConfig);
+router.post("/api/supervisor/self-tasks/add", requireAdminApi, supervisorController.addSelfTask);
+router.post("/api/supervisor/self-tasks/delete", requireAdminApi, supervisorController.deleteSelfTask);
 router.post("/api/supervisor/toggle-scores", requireAdminApi, supervisorController.toggleScoresVisible);
 router.post("/api/supervisor/archive-week", requireAdminApi, supervisorController.archiveWeekPoints);
 

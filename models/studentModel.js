@@ -40,14 +40,14 @@ async function getStudentById(id) {
   if (!studentRows.length) return null;
   const student = studentRows[0];
 
-  // إنجاز الذاتي: كل الأسابيع الـ16 المعرَّفة، مع حالة إنجاز الطالب لكل أسبوع
-  // (LEFT JOIN حتى تظهر الأسابيع غير المُنجزة بعد أيضاً)
+  // إنجاز الذاتي: كل متطلبات الأسابيع الـ16 المعرَّفة (متطلبان أو ثلاثة لكل أسبوع)،
+  // مع حالة إنجاز الطالب لكل متطلب (LEFT JOIN حتى تظهر غير المُنجزة أيضاً)
   const [selfRows] = await pool.query(
-    `SELECT wst.week_number, wst.title, wst.points AS task_points,
+    `SELECT wst.id AS task_id, wst.week_number, wst.title, wst.points AS task_points,
        sa.id AS achievement_id, sa.points AS earned_points, sa.confirmed_at
      FROM weekly_self_tasks wst
-     LEFT JOIN self_achievements sa ON sa.week_number = wst.week_number AND sa.student_id = ?
-     ORDER BY wst.week_number ASC`,
+     LEFT JOIN self_achievements sa ON sa.task_id = wst.id AND sa.student_id = ?
+     ORDER BY wst.week_number ASC, wst.id ASC`,
     [id]
   );
 
@@ -69,6 +69,7 @@ async function getStudentById(id) {
   );
 
   student.self_achievements = selfRows.map((r) => ({
+    task_id: r.task_id,
     week_number: r.week_number,
     title: r.title,
     task_points: r.task_points,
@@ -250,29 +251,29 @@ async function getAttendanceForSession(studentId, sessionId) {
   return rows[0] || null;
 }
 
-/* -------- تأكيد/إلغاء إنجاز "الذاتي" لطالب في أسبوع معين --------
+/* -------- تأكيد/إلغاء إنجاز متطلب "ذاتي" معين لطالب --------
    النقاط تُقرأ من weekly_self_tasks عند التأكيد وتبقى محفوظة في self_achievements
-   حتى لو تغيّرت قيمة الأسبوع لاحقاً في الإعدادات العامة */
-async function setSelfAchievementDone(studentId, weekNumber, done) {
+   حتى لو تغيّرت قيمة المتطلب لاحقاً في الإعدادات العامة */
+async function setSelfAchievementDone(studentId, taskId, done) {
   const [taskRows] = await pool.query(
-    "SELECT week_number, title, points FROM weekly_self_tasks WHERE week_number = ?",
-    [weekNumber]
+    "SELECT id, week_number, title, points FROM weekly_self_tasks WHERE id = ?",
+    [taskId]
   );
   if (!taskRows.length) return null;
   const task = taskRows[0];
 
   const [existing] = await pool.query(
-    "SELECT id, points FROM self_achievements WHERE student_id = ? AND week_number = ?",
-    [studentId, weekNumber]
+    "SELECT id, points FROM self_achievements WHERE student_id = ? AND task_id = ?",
+    [studentId, taskId]
   );
 
   if (done && !existing.length) {
     if (!task.points || task.points <= 0) {
-      return { error: "لم يتم ضبط نقاط هذا الأسبوع بعد، اضبطها أولاً من إعدادات الذاتي" };
+      return { error: "لم يتم ضبط نقاط هذا المتطلب بعد، اضبطها أولاً من إعدادات الذاتي" };
     }
     await pool.query(
-      "INSERT INTO self_achievements (student_id, week_number, points) VALUES (?, ?, ?)",
-      [studentId, weekNumber, task.points]
+      "INSERT INTO self_achievements (student_id, task_id, points) VALUES (?, ?, ?)",
+      [studentId, taskId, task.points]
     );
     await pool.query(
       "UPDATE students SET knowledge_points = GREATEST(knowledge_points + ?, 0) WHERE id = ?",
@@ -287,7 +288,42 @@ async function setSelfAchievementDone(studentId, weekNumber, done) {
     );
   }
 
-  return { week_number: weekNumber, title: task.title, done, points: done ? task.points : 0 };
+  return { task_id: taskId, week_number: task.week_number, title: task.title, done, points: done ? task.points : 0 };
+}
+
+/* -------- إضافة متطلب ذاتي جديد لأسبوع معين -------- */
+async function addSelfTask(weekNumber, title, points) {
+  const [result] = await pool.query(
+    "INSERT INTO weekly_self_tasks (week_number, title, points) VALUES (?, ?, ?)",
+    [weekNumber, title, points]
+  );
+  return { id: result.insertId, week_number: weekNumber, title, points };
+}
+
+/* -------- حذف متطلب ذاتي، مع خصم النقاط ممن أنجزه من الطلاب أولاً -------- */
+async function deleteSelfTask(taskId) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [earners] = await conn.query(
+      "SELECT student_id, points FROM self_achievements WHERE task_id = ?",
+      [taskId]
+    );
+    for (const e of earners) {
+      await conn.query(
+        "UPDATE students SET knowledge_points = GREATEST(knowledge_points - ?, 0) WHERE id = ?",
+        [e.points, e.student_id]
+      );
+    }
+    // self_achievements تُحذف تلقائياً عبر ON DELETE CASCADE
+    await conn.query("DELETE FROM weekly_self_tasks WHERE id = ?", [taskId]);
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 /* -------- إنشاء طالب جديد (من لوحة الإدارة) مع باركود فريد -------- */
@@ -376,6 +412,8 @@ module.exports = {
   markAttendance,
   getAttendanceForSession,
   setSelfAchievementDone,
+  addSelfTask,
+  deleteSelfTask,
   createStudent,
   moveStudentGroup,
   deleteStudent,

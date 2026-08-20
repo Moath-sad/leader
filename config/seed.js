@@ -88,13 +88,18 @@ async function run() {
     console.log("⏳ إدخال الطلاب وبياناتهم ...");
     let barcodeCounter = 1;
 
+    // متطلبا الأسبوع الأول (بيانات تجريبية: كل طالب يُنجز متطلبي الأسبوع الأول فقط)
+    const [week1Tasks] = await connection.query(
+      "SELECT id, points FROM weekly_self_tasks WHERE week_number = 1 ORDER BY id"
+    );
+
     for (let idx = 0; idx < SAMPLE_NAMES.length; idx++) {
       const name = SAMPLE_NAMES[idx];
       const groupName = GROUP_NAMES[idx % GROUP_NAMES.length];
       const groupId = groupIdByName[groupName];
       const barcode = generateBarcodeId(barcodeCounter++);
 
-      const knowledgePoints = 50; // يطابق إنجاز الأسبوعين التجريبيين (25 نقطة لكل أسبوع)
+      const knowledgePoints = week1Tasks.reduce((sum, t) => sum + t.points, 0); // يطابق إنجاز متطلبي الأسبوع الأول
       const guardianPhone = "05" + Math.floor(10000000 + Math.random() * 89999999);
 
       // mysql2 يرجع [rows, fields] دائماً، والـ insertId يوصلنا له عبر rows.insertId
@@ -105,11 +110,11 @@ async function run() {
       );
       const studentId = studentResult.insertId;
 
-      // إنجاز الذاتي: نؤكد إنجاز الأسبوعين الأول والثاني فقط كبيانات تجريبية
-      for (const week of [1, 2]) {
+      // إنجاز الذاتي: نؤكد إنجاز متطلبي الأسبوع الأول فقط كبيانات تجريبية
+      for (const task of week1Tasks) {
         await connection.query(
-          "INSERT INTO self_achievements (student_id, week_number, points) VALUES (?, ?, 25)",
-          [studentId, week]
+          "INSERT INTO self_achievements (student_id, task_id, points) VALUES (?, ?, ?)",
+          [studentId, task.id, task.points]
         );
       }
 

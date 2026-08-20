@@ -308,98 +308,105 @@ async function markAttendanceManual(req, res, next) {
   }
 }
 
-/* -------- API: تسجيل حضور تلقائي عبر مسح الباركود (كاميرا المشرف) -------- */
-async function scanBarcodeAttendance(req, res, next) {
-  try {
-    const { barcode } = req.body;
-    if (!barcode) {
-      return res.status(400).json({ success: false, message: "لم يتم استلام رمز الباركود" });
-    }
-
-    const student = await studentModel.getStudentByBarcode(barcode.trim());
-    if (!student) {
-      return res.status(404).json({ success: false, message: "لا يوجد طالب بهذا الباركود" });
-    }
-
-    // نحدد جلسة اليوم تلقائياً، أو أقرب جلسة قادمة إن لم يكن اليوم يوم نادي
-    const session = await sessionModel.getCurrentOrNextSession();
-    if (!session) {
-      return res.status(400).json({ success: false, message: "لا توجد جلسات معرَّفة لهذا الموسم" });
-    }
-
-    // هل كان مسجلاً "حاضر" بالفعل لهذه الجلسة مسبقاً؟ (وليس أي حالة أخرى كـ"غايب")
-    const previous = await studentModel.getAttendanceForSession(student.id, session.id);
-    const alreadyPresent = previous?.status === "حاضر";
-
-    // يسجَّل "حاضر" تلقائياً عند المسح، ويُحدِّث أي حالة سابقة (مثل "غايب") إلى "حاضر"
-    const record = await studentModel.markAttendance(student.id, "حاضر", session.id);
-
-    await pool.query(
-      "INSERT INTO activity_log (action) VALUES (?)",
-      [`تسجيل حضور تلقائي عبر الباركود لـ ${student.name} (${session.day_name} - الأسبوع ${session.week_number})`]
-    );
-
-    res.json({
-      success: true,
-      alreadyMarked: alreadyPresent,
-      session,
-      student: {
-        id: student.id,
-        name: student.name,
-        group_name: student.group_name,
-        barcode: student.barcode,
-      },
-      record,
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
-/* -------- API: جلب إعدادات الذاتي الأسبوعية (عنوان + نقاط لكل أسبوع من 1 إلى 16) -------- */
+/* -------- API: جلب إعدادات الذاتي الأسبوعية (متطلبان أو ثلاثة لكل أسبوع) -------- */
 async function getSelfTaskConfig(req, res, next) {
   try {
     const [rows] = await pool.query(
-      "SELECT week_number, title, points FROM weekly_self_tasks ORDER BY week_number ASC"
+      "SELECT id, week_number, title, points FROM weekly_self_tasks ORDER BY week_number ASC, id ASC"
     );
     res.json({ success: true, config: rows });
   } catch (err) { next(err); }
 }
 
-/* -------- API: حفظ عنوان ونقاط الذاتي لكل أسبوع -------- */
+/* -------- API: حفظ عنوان ونقاط كل متطلبات الذاتي الحالية -------- */
 async function saveSelfTaskConfig(req, res, next) {
   try {
-    const { configs } = req.body; // [{weekNumber, title, points}, ...]
+    const { configs } = req.body; // [{taskId, title, points}, ...]
     if (!Array.isArray(configs)) return res.status(400).json({ success: false });
 
-    for (const { weekNumber, title, points } of configs) {
-      const week = Number(weekNumber);
+    for (const { taskId, title, points } of configs) {
+      const id = Number(taskId);
       const pts = Math.max(0, Number(points) || 0);
       const titleTrimmed = (title || "").trim();
-      if (!week || !titleTrimmed) continue;
+      if (!id || !titleTrimmed) continue;
       await pool.query(
-        "UPDATE weekly_self_tasks SET title = ?, points = ? WHERE week_number = ?",
-        [titleTrimmed, pts, week]
+        "UPDATE weekly_self_tasks SET title = ?, points = ? WHERE id = ?",
+        [titleTrimmed, pts, id]
       );
     }
     res.json({ success: true });
   } catch (err) { next(err); }
 }
 
-/* -------- API: تأكيد/إلغاء إنجاز الذاتي لطالب في أسبوع معين -------- */
-async function setSelfAchievementStatus(req, res, next) {
+/* -------- API: إضافة متطلب ذاتي جديد لأسبوع معين -------- */
+async function addSelfTask(req, res, next) {
   try {
-    const { studentId, weekNumber, done } = req.body;
-    const studentIdNum = Number(studentId);
-    const weekNum = Number(weekNumber);
+    const weekNumber = Number(req.body.weekNumber);
+    if (!weekNumber || weekNumber < 1 || weekNumber > 16) {
+      return res.status(400).json({ success: false, message: "أدخل رقم أسبوع صحيح (1 إلى 16)" });
+    }
 
-    if (!studentIdNum || !weekNum || typeof done !== "boolean") {
+    const [countRows] = await pool.query(
+      "SELECT COUNT(*) AS c FROM weekly_self_tasks WHERE week_number = ?",
+      [weekNumber]
+    );
+    if (countRows[0].c >= 3) {
+      return res.status(400).json({ success: false, message: "الحد الأقصى 3 متطلبات لكل أسبوع" });
+    }
+
+    const task = await studentModel.addSelfTask(weekNumber, `متطلب جديد - الأسبوع ${weekNumber}`, 0);
+
+    await pool.query(
+      "INSERT INTO activity_log (action) VALUES (?)",
+      [`إضافة متطلب ذاتي جديد للأسبوع ${weekNumber}`]
+    );
+
+    res.json({ success: true, task });
+  } catch (err) { next(err); }
+}
+
+/* -------- API: حذف متطلب ذاتي (يخصم النقاط ممن أنجزه أولاً) -------- */
+async function deleteSelfTask(req, res, next) {
+  try {
+    const taskId = Number(req.body.taskId);
+    if (!taskId) {
       return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
     }
 
-    const result = await studentModel.setSelfAchievementDone(studentIdNum, weekNum, done);
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS c FROM weekly_self_tasks
+       WHERE week_number = (SELECT week_number FROM weekly_self_tasks WHERE id = ?)`,
+      [taskId]
+    );
+    if (countRows[0].c <= 2) {
+      return res.status(400).json({ success: false, message: "لا يمكن أن يقل عدد متطلبات الأسبوع عن اثنين" });
+    }
+
+    await studentModel.deleteSelfTask(taskId);
+
+    await pool.query(
+      "INSERT INTO activity_log (action) VALUES (?)",
+      [`حذف متطلب ذاتي (رقم ${taskId})`]
+    );
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+}
+
+/* -------- API: تأكيد/إلغاء إنجاز متطلب ذاتي معين لطالب -------- */
+async function setSelfAchievementStatus(req, res, next) {
+  try {
+    const { studentId, taskId, done } = req.body;
+    const studentIdNum = Number(studentId);
+    const taskIdNum = Number(taskId);
+
+    if (!studentIdNum || !taskIdNum || typeof done !== "boolean") {
+      return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
+    }
+
+    const result = await studentModel.setSelfAchievementDone(studentIdNum, taskIdNum, done);
     if (!result) {
-      return res.status(404).json({ success: false, message: "الأسبوع غير معرَّف" });
+      return res.status(404).json({ success: false, message: "المتطلب غير موجود" });
     }
     if (result.error) {
       return res.status(400).json({ success: false, message: result.error });
@@ -407,7 +414,7 @@ async function setSelfAchievementStatus(req, res, next) {
 
     await pool.query(
       "INSERT INTO activity_log (action) VALUES (?)",
-      [`تحديث إنجاز الذاتي "${result.title}" (الأسبوع ${weekNum}) إلى ${done ? "مُنجز" : "غير مُنجز"}`]
+      [`تحديث إنجاز الذاتي "${result.title}" (الأسبوع ${result.week_number}) إلى ${done ? "مُنجز" : "غير مُنجز"}`]
     );
 
     res.json({ success: true, achievement: result });
@@ -482,10 +489,11 @@ module.exports = {
   deleteStudent,
   addPoints,
   markAttendanceManual,
-  scanBarcodeAttendance,
   setSelfAchievementStatus,
   getSelfTaskConfig,
   saveSelfTaskConfig,
+  addSelfTask,
+  deleteSelfTask,
   toggleScoresVisible,
   archiveWeekPoints,
   showPointsArchive,

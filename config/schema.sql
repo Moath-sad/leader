@@ -48,46 +48,48 @@ CREATE TABLE students (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- جدول تعريف "الذاتي" الأسبوعي — متطلب واحد مختلف لكل أسبوع (1 إلى 16)
--- تضبطه الإدارة مرة واحدة (العنوان + النقاط)، ويُقيَّم كل طالب عليه أسبوعياً
+-- جدول تعريف "الذاتي" الأسبوعي — متطلبان أو ثلاثة لكل أسبوع (1 إلى 16)
+-- تختار الإدارة/المشرفون عددها بحرية لكل أسبوع، ولكل متطلب نقاطه الخاصة
 -- =========================================================
 CREATE TABLE weekly_self_tasks (
-  week_number INT PRIMARY KEY,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  week_number INT NOT NULL,
   title VARCHAR(200) NOT NULL,
-  points INT NOT NULL DEFAULT 0
+  points INT NOT NULL DEFAULT 0,
+  INDEX idx_self_tasks_week (week_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO weekly_self_tasks (week_number, title, points) VALUES
-  (1, 'متطلب الذاتي - الأسبوع 1', 25),
-  (2, 'متطلب الذاتي - الأسبوع 2', 25),
-  (3, 'متطلب الذاتي - الأسبوع 3', 25),
-  (4, 'متطلب الذاتي - الأسبوع 4', 25),
-  (5, 'متطلب الذاتي - الأسبوع 5', 25),
-  (6, 'متطلب الذاتي - الأسبوع 6', 25),
-  (7, 'متطلب الذاتي - الأسبوع 7', 25),
-  (8, 'متطلب الذاتي - الأسبوع 8', 25),
-  (9, 'متطلب الذاتي - الأسبوع 9', 25),
-  (10, 'متطلب الذاتي - الأسبوع 10', 25),
-  (11, 'متطلب الذاتي - الأسبوع 11', 25),
-  (12, 'متطلب الذاتي - الأسبوع 12', 25),
-  (13, 'متطلب الذاتي - الأسبوع 13', 25),
-  (14, 'متطلب الذاتي - الأسبوع 14', 25),
-  (15, 'متطلب الذاتي - الأسبوع 15', 25),
-  (16, 'متطلب الذاتي - الأسبوع 16', 25);
+  (1, 'متطلب 1 - الأسبوع 1', 25), (1, 'متطلب 2 - الأسبوع 1', 25),
+  (2, 'متطلب 1 - الأسبوع 2', 25), (2, 'متطلب 2 - الأسبوع 2', 25),
+  (3, 'متطلب 1 - الأسبوع 3', 25), (3, 'متطلب 2 - الأسبوع 3', 25),
+  (4, 'متطلب 1 - الأسبوع 4', 25), (4, 'متطلب 2 - الأسبوع 4', 25),
+  (5, 'متطلب 1 - الأسبوع 5', 25), (5, 'متطلب 2 - الأسبوع 5', 25),
+  (6, 'متطلب 1 - الأسبوع 6', 25), (6, 'متطلب 2 - الأسبوع 6', 25),
+  (7, 'متطلب 1 - الأسبوع 7', 25), (7, 'متطلب 2 - الأسبوع 7', 25),
+  (8, 'متطلب 1 - الأسبوع 8', 25), (8, 'متطلب 2 - الأسبوع 8', 25),
+  (9, 'متطلب 1 - الأسبوع 9', 25), (9, 'متطلب 2 - الأسبوع 9', 25),
+  (10, 'متطلب 1 - الأسبوع 10', 25), (10, 'متطلب 2 - الأسبوع 10', 25),
+  (11, 'متطلب 1 - الأسبوع 11', 25), (11, 'متطلب 2 - الأسبوع 11', 25),
+  (12, 'متطلب 1 - الأسبوع 12', 25), (12, 'متطلب 2 - الأسبوع 12', 25),
+  (13, 'متطلب 1 - الأسبوع 13', 25), (13, 'متطلب 2 - الأسبوع 13', 25),
+  (14, 'متطلب 1 - الأسبوع 14', 25), (14, 'متطلب 2 - الأسبوع 14', 25),
+  (15, 'متطلب 1 - الأسبوع 15', 25), (15, 'متطلب 2 - الأسبوع 15', 25),
+  (16, 'متطلب 1 - الأسبوع 16', 25), (16, 'متطلب 2 - الأسبوع 16', 25);
 
 -- =========================================================
--- جدول إنجاز الذاتي لكل طالب — صف واحد فقط عند تأكيد إنجاز أسبوع معين
+-- جدول إنجاز الذاتي لكل طالب — صف واحد فقط عند تأكيد إنجاز متطلب معين
 -- (عدم وجود صف = لم يُنجز بعد). النقاط تُقرأ من weekly_self_tasks عند التأكيد
 -- =========================================================
 CREATE TABLE self_achievements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   student_id INT NOT NULL,
-  week_number INT NOT NULL,
+  task_id INT NOT NULL,
   points INT NOT NULL DEFAULT 0,
   confirmed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_self_ach_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-  CONSTRAINT fk_self_ach_week FOREIGN KEY (week_number) REFERENCES weekly_self_tasks(week_number) ON DELETE CASCADE,
-  UNIQUE KEY uq_student_week (student_id, week_number),
+  CONSTRAINT fk_self_ach_task FOREIGN KEY (task_id) REFERENCES weekly_self_tasks(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_student_task (student_id, task_id),
   INDEX idx_self_ach_student (student_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

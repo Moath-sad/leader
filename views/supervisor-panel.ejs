@@ -15,7 +15,7 @@
     <script type="application/json" id="studentsDataJson"><%- JSON.stringify(students.map(s => ({ id: s.id, name: s.name, group: s.group_name }))) %></script>
 
     <!-- =========================================================
-         1) الحضور: قائمة بالجملة + تسجيل يدوي + مسح باركود
+         1) الحضور: قائمة بالجملة حسب الأسر (التحضير الفردي عبر صفحة التحضير اليومي)
          ========================================================= -->
     <h3 class="panel-group-title">📅 الحضور</h3>
 
@@ -48,56 +48,6 @@
     </div>
 
     <script type="application/json" id="attendanceGroupsDataJson"><%- JSON.stringify(allGroups) %></script>
-
-    <div class="panel-grid" style="margin-bottom:18px;">
-      <!-- نموذج تسجيل الحضور اليدوي -->
-      <div class="panel-box">
-        <h4>تسجيل الحضور اليدوي</h4>
-        <form id="attendanceForm">
-          <div class="form-group">
-            <label for="attendanceStudentSearch">اختر الطالب</label>
-            <div class="search-box-wrapper" style="margin-bottom:0;">
-              <input type="text" id="attendanceStudentSearch" class="search-input" placeholder="اكتب اسم الطالب..." autocomplete="off">
-              <div class="search-results" id="attendanceStudentResults"></div>
-            </div>
-            <input type="hidden" id="attendanceStudentSelect">
-          </div>
-          <div class="form-group">
-            <label for="attendanceSessionSelect">الجلسة</label>
-            <select id="attendanceSessionSelect" class="form-select">
-              <% sessions.forEach(sess => { %>
-                <option value="<%= sess.id %>">
-                  الأسبوع <%= sess.week_number %> — <%= sess.day_name %> (<%= sess.session_date %>)
-                </option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="attendanceStatusSelect">الحالة</label>
-            <select id="attendanceStatusSelect" class="form-select">
-              <option value="حاضر">حاضر</option>
-              <option value="متأخر">متأخر</option>
-              <option value="غايب">غايب</option>
-            </select>
-          </div>
-          <button type="button" id="attendanceSubmitBtn" class="btn btn-primary">تسجيل الحضور</button>
-          <p class="form-msg" id="attendanceMsg"></p>
-        </form>
-      </div>
-
-      <!-- مسح الباركود -->
-      <div class="panel-box">
-        <h4>مسح باركود الطالب</h4>
-        <p class="section-desc" style="margin-bottom:12px; font-size:13px;">يُسجَّل الحضور تلقائياً لجلسة اليوم (أو أقرب جلسة قادمة)</p>
-        <button id="startScanBtn" class="btn btn-gold scanner-btn" style="width:100%;">تشغيل الكاميرا لمسح الباركود</button>
-        <div class="scanner-wrapper hidden" id="scannerWrapper">
-          <video id="scannerVideo"></video>
-          <canvas id="scannerCanvas" class="hidden"></canvas>
-          <p class="scanner-status" id="scannerStatus"></p>
-          <div id="scannerResult"></div>
-        </div>
-      </div>
-    </div>
 
     <!-- =========================================================
          2) النقاط: إضافة/خصم + إنجاز الذاتي الأسبوعي
@@ -167,10 +117,21 @@
     </div>
 
     <% if (role === 'admin') { %>
-    <!-- إعداد عنوان ونقاط الذاتي لكل أسبوع (مرة واحدة) -->
+    <!-- إعداد متطلبات الذاتي لكل أسبوع (متطلبان أو ثلاثة، وعدد نقاط كل متطلب) -->
     <div class="panel-box" style="margin-bottom:18px;">
       <h4 style="margin-top:0;">⚙️ ضبط الذاتي الأسبوعي (16 أسبوعاً)</h4>
-      <p class="section-desc" style="margin-bottom:12px; font-size:13px;">حدد عنوان ونقاط متطلب كل أسبوع — يمكن أن يختلف كل أسبوع عن الآخر</p>
+      <p class="section-desc" style="margin-bottom:12px; font-size:13px;">لكل أسبوع متطلبان أو ثلاثة، بعنوان ونقاط مستقلة لكل متطلب — أضف أو احذف متطلبات أي أسبوع بحرية</p>
+      <div class="form-group" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:14px;">
+        <div style="flex:1;">
+          <label for="addTaskWeekSelect">إضافة متطلب لأسبوع</label>
+          <select id="addTaskWeekSelect" class="form-select">
+            <% for (let w = 1; w <= 16; w++) { %>
+              <option value="<%= w %>">الأسبوع <%= w %></option>
+            <% } %>
+          </select>
+        </div>
+        <button type="button" id="addTaskBtn" class="btn btn-outline btn-small">➕ إضافة متطلب</button>
+      </div>
       <div id="taskConfigList" class="knowledge-tasks-list scrollable-weeks"></div>
       <button type="button" id="saveTaskConfigBtn" class="btn btn-primary" style="margin-top:12px; width:100%;">حفظ الإعدادات</button>
       <p class="form-msg" id="taskConfigMsg"></p>
