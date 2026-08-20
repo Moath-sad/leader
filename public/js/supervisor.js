@@ -797,7 +797,7 @@ function printSingleBarcode(student) {
       </style>
     </head>
     <body>
-      <h2>نادي القيروان</h2>
+      <h2>قسم قائد</h2>
       <p>${student.name}</p>
       <div id="qrPrint"></div>
       <div class="code">${student.barcode}</div>

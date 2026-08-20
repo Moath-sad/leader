@@ -1,7 +1,7 @@
 {
   "name": "qayrawan-club",
   "version": "1.0.0",
-  "description": "موقع نادي القيروان - منصة متابعة الطلاب والبرامج",
+  "description": "موقع قسم قائد - منصة متابعة الطلاب والبرامج",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
