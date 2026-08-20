@@ -273,3 +273,5 @@ https://qayrawan-club.up.railway.app
 # summer-club-management-2
 A web-based management system for summer clubs with attendance tracking, QR code check-in, student rewards, and group management.
 >>>>>>> 16c77256997d376637b490662cd34967e639ee41
+#   l e a d e r  
+ 
