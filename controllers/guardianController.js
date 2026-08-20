@@ -11,7 +11,7 @@ const pool = require("../config/db");
 async function showGuardianPage(req, res, next) {
   try {
     res.render("guardian", {
-      pageTitle: "بوابة ولي الأمر",
+      pageTitle: "ملف الطالب",
       activeNav: "guardian",
     });
   } catch (err) {
