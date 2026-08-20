@@ -1,0 +1,93 @@
+<%- include('partials/header') %>
+
+  <section class="app-section active">
+    <h2 class="section-title">📋 التحضير اليومي</h2>
+
+    <% if (!session) { %>
+      <div class="panel-box">
+        <p class="empty-note">لا توجد جلسة نادي اليوم — التحضير الذاتي يعمل فقط في يوم الجلسة الفعلي.</p>
+      </div>
+    <% } else { %>
+      <p class="section-desc">
+        جلسة اليوم: الأسبوع <%= session.week_number %> — <%= session.day_name %> (<%= session.session_date %>)<br>
+        ابحث عن اسمك واضغط "أنا حاضر" لتسجيل حضورك بنفسك.
+      </p>
+
+      <div class="panel-box" style="margin-bottom:18px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="dailySearchInput">اكتب اسمك للبحث السريع</label>
+          <input type="text" id="dailySearchInput" class="form-input" placeholder="اكتب اسمك...">
+        </div>
+      </div>
+
+      <div id="familiesContainer"></div>
+    <% } %>
+  </section>
+
+<%- include('partials/footer') %>
+
+<% if (session) { %>
+<script>
+  const familiesData = <%- JSON.stringify(familiesData) %>;
+  const container = document.getElementById('familiesContainer');
+  const searchInput = document.getElementById('dailySearchInput');
+
+  function statusBadge(status) {
+    if (status === 'حاضر' || status === 'متأخر') return `<span class="badge badge-success">حاضر ✅</span>`;
+    return `<button type="button" class="btn btn-gold btn-small self-attend-btn" data-student-id="__ID__">أنا حاضر</button>`;
+  }
+
+  function render(filterText) {
+    const normalized = (filterText || '').trim();
+    container.innerHTML = familiesData.map((fam) => {
+      const members = fam.members.filter((m) => !normalized || m.name.includes(normalized));
+      if (!members.length) return '';
+      const rows = members.map((m) => `
+        <div class="attendance-row" data-student-id="${m.id}">
+          <span class="attendance-row-name">${m.name}</span>
+          ${statusBadge(m.status).replace('__ID__', m.id)}
+        </div>
+      `).join('');
+      return `
+        <div class="panel-box" style="margin-bottom:14px;">
+          <h4 style="margin-top:0;">${fam.groupName}</h4>
+          ${rows}
+        </div>
+      `;
+    }).join('') || `<p class="empty-note">لا يوجد طالب بهذا الاسم</p>`;
+
+    container.querySelectorAll('.self-attend-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const studentId = btn.dataset.studentId;
+        btn.disabled = true;
+        btn.textContent = 'جارٍ التسجيل...';
+        try {
+          const res = await fetch('/api/daily-attendance/mark', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId }),
+          });
+          const data = await res.json();
+          if (!data.success) {
+            alert(data.message || 'حدث خطأ');
+            btn.disabled = false;
+            btn.textContent = 'أنا حاضر';
+            return;
+          }
+          const family = familiesData.find((f) => f.members.some((m) => String(m.id) === String(studentId)));
+          const member = family.members.find((m) => String(m.id) === String(studentId));
+          member.status = 'حاضر';
+          render(searchInput.value);
+        } catch (e) {
+          alert('حدث خطأ في الاتصال بالخادم');
+          btn.disabled = false;
+          btn.textContent = 'أنا حاضر';
+        }
+      });
+    });
+  }
+
+  searchInput.addEventListener('input', () => render(searchInput.value));
+  render('');
+</script>
+<% } %>

@@ -37,20 +37,7 @@ const SAMPLE_NAMES = [
   "كريم نواف العتيبي", "عبدالرحمن ياسر الدوسري", "تميم بشير العنزي",
 ];
 
-// متطلبات البرنامج الذاتي، مختلفة حسب المرحلة: 3 للمرحلة الأولية (الدنيا) و4 للمرحلة العليا
-const KNOWLEDGE_TASKS_BY_CATEGORY = {
-  "الأولوية": [
-    "قول كلمة طيبة بالمنزل",
-    "تسميع سورة الفاتحة غيباً",
-    "القيام بعمل تعاوني بالمنزل",
-  ],
-  "الفئة العليا": [
-    "ما هو الذكاء الاصطناعي",
-    "نجرب الأدوات",
-    "ابدع وفكر بنقد",
-    "مشروع ومهاراتي",
-  ],
-};
+const INITIATIVE_CATEGORIES = ["التقنية", "الأدبية", "الأصولية", "المهارية"];
 
 function generateBarcodeId(index) {
   const year = new Date().getFullYear();
@@ -105,10 +92,9 @@ async function run() {
       const name = SAMPLE_NAMES[idx];
       const groupName = GROUP_NAMES[idx % GROUP_NAMES.length];
       const groupId = groupIdByName[groupName];
-      const groupCategory = GROUPS_WITH_CATEGORY.find((g) => g.name === groupName).category;
       const barcode = generateBarcodeId(barcodeCounter++);
 
-      const knowledgePoints = Math.floor(Math.random() * 60) + 10;
+      const knowledgePoints = 50; // يطابق إنجاز الأسبوعين التجريبيين (25 نقطة لكل أسبوع)
       const guardianPhone = "05" + Math.floor(10000000 + Math.random() * 89999999);
 
       // mysql2 يرجع [rows, fields] دائماً، والـ insertId يوصلنا له عبر rows.insertId
@@ -119,11 +105,11 @@ async function run() {
       );
       const studentId = studentResult.insertId;
 
-      // متطلبات البرنامج الذاتي — تبدأ كلها "غير مُنجزة" حتى يقيّمها المشرف فعلياً
-      for (const taskTitle of KNOWLEDGE_TASKS_BY_CATEGORY[groupCategory]) {
+      // إنجاز الذاتي: نؤكد إنجاز الأسبوعين الأول والثاني فقط كبيانات تجريبية
+      for (const week of [1, 2]) {
         await connection.query(
-          "INSERT INTO knowledge_tasks (student_id, title, done) VALUES (?, ?, FALSE)",
-          [studentId, taskTitle]
+          "INSERT INTO self_achievements (student_id, week_number, points) VALUES (?, ?, 25)",
+          [studentId, week]
         );
       }
 
@@ -132,13 +118,10 @@ async function run() {
 
       // مبادرات تجريبية لأول 5 طلاب فقط
       if (idx < 5) {
-        const sampleInitiatives = [
-          "مبادرة تنظيف الحي", "قراءة كتاب إضافي", "تطوع في فعالية النادي",
-          "مساعدة زميل متعثر", "تنظيم ركن توعوي",
-        ];
+        const category = INITIATIVE_CATEGORIES[idx % INITIATIVE_CATEGORIES.length];
         await connection.query(
-          "INSERT INTO initiatives (student_id, title, points) VALUES (?, ?, ?)",
-          [studentId, sampleInitiatives[idx], Math.floor(Math.random() * 10) + 5]
+          "INSERT INTO initiatives (student_id, category, points) VALUES (?, ?, ?)",
+          [studentId, category, Math.floor(Math.random() * 10) + 5]
         );
       }
     }

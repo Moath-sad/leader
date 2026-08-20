@@ -435,6 +435,17 @@ function setupPointsForm() {
   const addBtn = document.getElementById("addPointsBtn");
   const subtractBtn = document.getElementById("subtractPointsBtn");
   const msg = document.getElementById("pointsMsg");
+  const programSelect = document.getElementById("programSelect");
+  const categoryGroup = document.getElementById("initiativeCategoryGroup");
+
+  function syncCategoryVisibility() {
+    if (!categoryGroup) return;
+    categoryGroup.style.display = programSelect.value === "initiative" ? "" : "none";
+  }
+  if (programSelect) {
+    programSelect.addEventListener("change", syncCategoryVisibility);
+    syncCategoryVisibility();
+  }
 
   addBtn.addEventListener("click", () => submitPoints("add"));
   subtractBtn.addEventListener("click", () => submitPoints("subtract"));
@@ -453,6 +464,11 @@ function setupPointsForm() {
 
     if (!amount || amount <= 0) {
       showMsg(msg, "أدخل عدد نقاط صحيح", "error");
+      return;
+    }
+
+    if (program === "initiative" && !reason) {
+      showMsg(msg, "اختر محور المبادرة", "error");
       return;
     }
 
@@ -548,20 +564,22 @@ function setupKnowledgeTasksPanel() {
   if (saveBtn) saveBtn.addEventListener("click", saveTaskConfig);
 }
 
-/* تحميل إعدادات نقاط المتطلبات وعرضها في القسم العالمي */
+/* تحميل إعدادات الذاتي الأسبوعية (16 أسبوعاً) وعرضها في القسم العالمي */
 async function loadTaskConfig() {
   const configBox = document.getElementById("taskConfigList");
   if (!configBox) return;
 
   try {
-    const res = await fetch("/api/supervisor/task-config");
+    const res = await fetch("/api/supervisor/self-task-config");
     const data = await res.json();
     if (!data.success) return;
 
     const renderRow = (t) => `
       <div class="task-config-row">
-        <span class="task-config-title">${t.title}</span>
-        <input type="number" class="task-config-input" data-title="${t.title}"
+        <span class="task-config-title">الأسبوع ${t.week_number}</span>
+        <input type="text" class="task-config-title-input" data-week="${t.week_number}"
+          placeholder="عنوان المتطلب" value="${t.title}">
+        <input type="number" class="task-config-input" data-week="${t.week_number}"
           min="1" placeholder="0" value="${t.points > 0 ? t.points : ""}">
         <span class="task-points-label">نقطة</span>
       </div>
@@ -573,31 +591,36 @@ async function loadTaskConfig() {
   }
 }
 
-/* حفظ إعدادات النقاط عالمياً */
+/* حفظ عنوان ونقاط الذاتي لكل أسبوع */
 async function saveTaskConfig() {
-  const inputs = document.querySelectorAll(".task-config-input");
+  const pointInputs = document.querySelectorAll(".task-config-input");
   const saveBtn = document.getElementById("saveTaskConfigBtn");
   const msg = document.getElementById("taskConfigMsg");
 
-  const configs = Array.from(inputs).map((inp) => ({
-    title: inp.dataset.title,
-    points: Number(inp.value) || 0,
-  }));
+  const configs = Array.from(pointInputs).map((inp) => {
+    const week = inp.dataset.week;
+    const titleInput = document.querySelector(`.task-config-title-input[data-week="${week}"]`);
+    return {
+      weekNumber: Number(week),
+      title: titleInput ? titleInput.value.trim() : "",
+      points: Number(inp.value) || 0,
+    };
+  });
 
-  if (configs.some((c) => c.points <= 0)) {
-    showMsg(msg, "أدخل قيمة نقاط لكل متطلب", "error");
+  if (configs.some((c) => c.points <= 0 || !c.title)) {
+    showMsg(msg, "أدخل عنواناً ونقاطاً لكل أسبوع", "error");
     return;
   }
 
   saveBtn.disabled = true;
   try {
-    const res = await fetch("/api/supervisor/task-config", {
+    const res = await fetch("/api/supervisor/self-task-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ configs }),
     });
     const data = await res.json();
-    showMsg(msg, data.success ? "تم حفظ النقاط بنجاح ✅" : "حدث خطأ", data.success ? "success" : "error");
+    showMsg(msg, data.success ? "تم حفظ الإعدادات بنجاح ✅" : "حدث خطأ", data.success ? "success" : "error");
   } catch (e) {
     showMsg(msg, "حدث خطأ في الاتصال", "error");
   } finally {
@@ -617,45 +640,44 @@ async function loadKnowledgeTasks(studentId) {
 
     if (!data.success) {
       list.innerHTML = "";
-      showMsg(msg, "تعذر تحميل متطلبات هذا الطالب", "error");
+      showMsg(msg, "تعذر تحميل إنجاز هذا الطالب", "error");
       return;
     }
 
-    const tasks = data.student.knowledge_tasks;
-    if (!tasks.length) {
-      list.innerHTML = `<p class="empty-note">لا توجد متطلبات معرَّفة لهذا الطالب</p>`;
+    const weeks = data.student.self_achievements;
+    if (!weeks.length) {
+      list.innerHTML = `<p class="empty-note">لا توجد أسابيع معرَّفة بعد</p>`;
       return;
     }
 
-    list.innerHTML = tasks.map((t) => `
+    list.innerHTML = weeks.map((t) => `
       <div class="task-toggle-item">
-        <input type="checkbox" class="task-toggle-checkbox" data-task-id="${t.id}" ${t.done ? "checked" : ""}>
-        <span class="task-toggle-title">${t.title}</span>
+        <input type="checkbox" class="task-toggle-checkbox" data-week="${t.week_number}" ${t.done ? "checked" : ""}>
+        <span class="task-toggle-title">الأسبوع ${t.week_number}: ${t.title}</span>
         ${t.done && t.points ? `<span class="task-done-points">${t.points} نقطة</span>` : ""}
       </div>
     `).join("");
 
     list.querySelectorAll(".task-toggle-checkbox").forEach((checkbox) => {
       checkbox.addEventListener("change", async () => {
-        const taskId = checkbox.dataset.taskId;
+        const weekNumber = checkbox.dataset.week;
         const done = checkbox.checked;
         checkbox.disabled = true;
         try {
-          const res = await fetch("/api/supervisor/tasks", {
+          const res = await fetch("/api/supervisor/self-achievements", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ taskId, done }),
+            body: JSON.stringify({ studentId, weekNumber, done }),
           });
           const data = await res.json();
           if (!data.success) {
             checkbox.checked = !done;
             showMsg(msg, data.message || "حدث خطأ", "error");
           } else {
+            const a = data.achievement;
             const action = done ? "تم إنجاز" : "تم إلغاء إنجاز";
-            const pts = data.task && data.task.points;
-            showMsg(msg, action + " [" + data.task.title + "]" + (done && pts ? " (+" + pts + " نقطة) ✅" : " ✅"), "success");
-            const sid = document.getElementById("tasksStudentSelect").value;
-            if (sid) loadKnowledgeTasks(sid);
+            showMsg(msg, action + " [الأسبوع " + a.week_number + "]" + (done && a.points ? " (+" + a.points + " نقطة) ✅" : " ✅"), "success");
+            loadKnowledgeTasks(studentId);
           }
         } catch (err) {
           checkbox.checked = !done;

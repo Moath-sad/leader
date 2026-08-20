@@ -76,14 +76,14 @@ async function getScoresVisible() {
   return !rows.length || rows[0].value === 'true';
 }
 
-// لون بطاقة التحضير حسب الأسرة: أحمر (البناء/الفلاح)، أزرق (الإخاء/الصروح)، بنفسجي (العطاء/الطموح)
+// لون بطاقة التحضير حسب الأسرة
 const CARD_COLOR_BY_FAMILY = {
-  "مجموعة البناء": "red",
-  "مجموعة الفلاح": "red",
-  "مجموعة الإخاء": "blue",
-  "مجموعة الصروح": "blue",
-  "مجموعة العطاء": "purple",
-  "مجموعة الطموح": "purple",
+  "أبو زامل": "red",
+  "أبو عبدالرحمن": "red",
+  "أبو جبر": "blue",
+  "أبو محمد": "blue",
+  "أبو عبدالله": "purple",
+  "أبو يوسف": "purple",
 };
 
 /* -------- صفحة بطاقات التحضير القابلة للطباعة (بطاقة لكل طالب) -------- */
@@ -245,6 +245,7 @@ async function deleteStudent(req, res, next) {
 async function addPoints(req, res, next) {
   try {
     const { studentId, program, amount, reason, mode } = req.body;
+    const category = (reason || "").trim();
 
     const studentIdNum = Number(studentId);
     let amountNum = Number(amount);
@@ -255,30 +256,29 @@ async function addPoints(req, res, next) {
       return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
     }
 
-    // دور "المشرفين" المحدود: مبادرة فقط، وبسبب إلزامي (يمنع التلاعب من العميل)
-    if (req.session.role !== "admin") {
-      if (program !== "initiative") {
-        return res.status(403).json({ success: false, message: "يمكنك فقط إضافة نقاط مبادرة / إنجاز مميز" });
-      }
-      if (!reason || !reason.trim()) {
-        return res.status(400).json({ success: false, message: "سبب المبادرة إلزامي" });
-      }
+    // دور "المشرفين" المحدود: مبادرة فقط
+    if (req.session.role !== "admin" && program !== "initiative") {
+      return res.status(403).json({ success: false, message: "يمكنك فقط إضافة نقاط مبادرة / إنجاز مميز" });
+    }
+
+    if (program === "initiative" && !studentModel.INITIATIVE_CATEGORIES.includes(category)) {
+      return res.status(400).json({ success: false, message: "اختر أحد محاور المبادرات الأربعة" });
     }
 
     // mode: "add" إضافة أو "subtract" خصم
     if (mode === "subtract") amountNum = -amountNum;
 
-    await studentModel.addPointsToStudent(studentIdNum, program, amountNum, reason);
+    const result = await studentModel.addPointsToStudent(studentIdNum, program, amountNum, category);
+    if (result && result.error) {
+      return res.status(400).json({ success: false, message: result.error });
+    }
 
     const actionLabel = mode === "subtract" ? "خصم" : "إضافة";
-    const programLabel = {
-      knowledge: "البرنامج الذاتي",
-      initiative: "المبادرات",
-    }[program] || program;
+    const programLabel = program === "initiative" ? `مبادرة ${category}` : "البرنامج الذاتي";
 
     await pool.query(
       "INSERT INTO activity_log (action) VALUES (?)",
-      [`${actionLabel} ${Math.abs(amountNum)} نقطة (${programLabel})${reason ? " — " + reason : ""}`]
+      [`${actionLabel} ${Math.abs(amountNum)} نقطة (${programLabel})`]
     );
 
     const updatedStudent = await studentModel.getStudentById(studentIdNum);
@@ -356,60 +356,61 @@ async function scanBarcodeAttendance(req, res, next) {
   }
 }
 
-/* -------- API: جلب إعدادات نقاط متطلبات البرنامج الذاتي (قيمة واحدة لكل عنوان) -------- */
-async function getTaskConfig(req, res, next) {
+/* -------- API: جلب إعدادات الذاتي الأسبوعية (عنوان + نقاط لكل أسبوع من 1 إلى 16) -------- */
+async function getSelfTaskConfig(req, res, next) {
   try {
-    const [rows] = await pool.query(`
-      SELECT kt.title, MAX(kt.points) AS points
-      FROM knowledge_tasks kt
-      GROUP BY kt.title
-      ORDER BY MIN(kt.id)
-    `);
+    const [rows] = await pool.query(
+      "SELECT week_number, title, points FROM weekly_self_tasks ORDER BY week_number ASC"
+    );
     res.json({ success: true, config: rows });
   } catch (err) { next(err); }
 }
 
-/* -------- API: حفظ نقاط المتطلبات عالمياً (لكل طالب لم يُنجز بعد) -------- */
-async function saveTaskConfig(req, res, next) {
+/* -------- API: حفظ عنوان ونقاط الذاتي لكل أسبوع -------- */
+async function saveSelfTaskConfig(req, res, next) {
   try {
-    const { configs } = req.body; // [{title, points}, ...]
+    const { configs } = req.body; // [{weekNumber, title, points}, ...]
     if (!Array.isArray(configs)) return res.status(400).json({ success: false });
 
-    for (const { title, points } of configs) {
+    for (const { weekNumber, title, points } of configs) {
+      const week = Number(weekNumber);
       const pts = Math.max(0, Number(points) || 0);
-      // نحدّث فقط المتطلبات غير المُنجزة حتى لا نمس النقاط المحسوبة مسبقاً
+      const titleTrimmed = (title || "").trim();
+      if (!week || !titleTrimmed) continue;
       await pool.query(
-        "UPDATE knowledge_tasks SET points = ? WHERE title = ? AND done = FALSE",
-        [pts, title]
+        "UPDATE weekly_self_tasks SET title = ?, points = ? WHERE week_number = ?",
+        [titleTrimmed, pts, week]
       );
     }
     res.json({ success: true });
   } catch (err) { next(err); }
 }
 
-async function setKnowledgeTaskStatus(req, res, next) {
+/* -------- API: تأكيد/إلغاء إنجاز الذاتي لطالب في أسبوع معين -------- */
+async function setSelfAchievementStatus(req, res, next) {
   try {
-    const { taskId, done } = req.body;
-    const taskIdNum = Number(taskId);
+    const { studentId, weekNumber, done } = req.body;
+    const studentIdNum = Number(studentId);
+    const weekNum = Number(weekNumber);
 
-    if (!taskIdNum || typeof done !== "boolean") {
+    if (!studentIdNum || !weekNum || typeof done !== "boolean") {
       return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
     }
 
-    const task = await studentModel.setKnowledgeTaskDone(taskIdNum, done);
-    if (!task) {
-      return res.status(404).json({ success: false, message: "المتطلب غير موجود" });
+    const result = await studentModel.setSelfAchievementDone(studentIdNum, weekNum, done);
+    if (!result) {
+      return res.status(404).json({ success: false, message: "الأسبوع غير معرَّف" });
     }
-    if (task.error) {
-      return res.status(400).json({ success: false, message: task.error });
+    if (result.error) {
+      return res.status(400).json({ success: false, message: result.error });
     }
 
     await pool.query(
       "INSERT INTO activity_log (action) VALUES (?)",
-      [`تحديث متطلب "${task.title}" إلى ${done ? "مُنجز" : "غير مُنجز"}`]
+      [`تحديث إنجاز الذاتي "${result.title}" (الأسبوع ${weekNum}) إلى ${done ? "مُنجز" : "غير مُنجز"}`]
     );
 
-    res.json({ success: true, task });
+    res.json({ success: true, achievement: result });
   } catch (err) {
     next(err);
   }
@@ -482,9 +483,9 @@ module.exports = {
   addPoints,
   markAttendanceManual,
   scanBarcodeAttendance,
-  setKnowledgeTaskStatus,
-  getTaskConfig,
-  saveTaskConfig,
+  setSelfAchievementStatus,
+  getSelfTaskConfig,
+  saveSelfTaskConfig,
   toggleScoresVisible,
   archiveWeekPoints,
   showPointsArchive,

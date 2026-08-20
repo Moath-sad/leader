@@ -1,6 +1,6 @@
 /* =========================================================
    models/sessionModel.js
-   إدارة جلسات النادي الثابتة (9 جلسات: 3 أسابيع × 3 أيام)
+   إدارة جلسات النادي الثابتة (32 جلسة: 16 أسبوعاً × يومين)
    يُستخدم في تسجيل الحضور اليدوي وعبر مسح الباركود، وفي بوابة
    ولي الأمر لعرض جدول حضور الطالب بالأيام الثابتة بدل تواريخ حرة
    ========================================================= */
@@ -72,9 +72,23 @@ async function autoMarkAbsentForPastSessions() {
   `);
 }
 
+/**
+ * جلسة اليوم بالضبط فقط (بدون تقريب لأقرب جلسة قادمة) — تُستخدم لتحضير
+ * الطالب لنفسه، الذي يجب أن يعمل فقط في يوم الجلسة الفعلي لا أي يوم آخر
+ */
+async function getTodaySession() {
+  const today = new Date().toISOString().slice(0, 10);
+  const [rows] = await pool.query(
+    "SELECT id, session_date, day_name, week_number FROM sessions WHERE session_date = ?",
+    [today]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   getAllSessions,
   getSessionById,
   getCurrentOrNextSession,
+  getTodaySession,
   autoMarkAbsentForPastSessions,
 };

@@ -1,11 +1,12 @@
 /* =========================================================
    models/studentModel.js
    كل دوال الوصول لجدول الطلاب والجداول المرتبطة به
-   (متطلبات الذاتي، مبادرات، حضور) - نسخة MySQL
+   (إنجاز ذاتي أسبوعي، مبادرات، حضور) - نسخة MySQL
    ========================================================= */
 
 const pool = require("../config/db");
 const { normalizeArabic } = require("../utils/arabicNormalize");
+const INITIATIVE_CATEGORIES = ["التقنية", "الأدبية", "الأصولية", "المهارية"];
 
 /* -------- جلب كل الطلاب مع اسم مجموعتهم وإجمالي نقاطهم -------- */
 async function getAllStudents() {
@@ -39,17 +40,24 @@ async function getStudentById(id) {
   if (!studentRows.length) return null;
   const student = studentRows[0];
 
-  const [tasksRows] = await pool.query(
-    "SELECT id, title, done FROM knowledge_tasks WHERE student_id = ? ORDER BY id",
+  // إنجاز الذاتي: كل الأسابيع الـ16 المعرَّفة، مع حالة إنجاز الطالب لكل أسبوع
+  // (LEFT JOIN حتى تظهر الأسابيع غير المُنجزة بعد أيضاً)
+  const [selfRows] = await pool.query(
+    `SELECT wst.week_number, wst.title, wst.points AS task_points,
+       sa.id AS achievement_id, sa.points AS earned_points, sa.confirmed_at
+     FROM weekly_self_tasks wst
+     LEFT JOIN self_achievements sa ON sa.week_number = wst.week_number AND sa.student_id = ?
+     ORDER BY wst.week_number ASC`,
     [id]
   );
+
   const [initiativesRows] = await pool.query(
-    "SELECT id, title, points, created_at FROM initiatives WHERE student_id = ? ORDER BY created_at DESC",
+    "SELECT id, category, points, created_at FROM initiatives WHERE student_id = ? ORDER BY created_at DESC",
     [id]
   );
-  // الحضور الآن مرتبط بجلسات محددة (9 جلسات ثابتة)، نجلب تفاصيل الجلسة مع كل سجل
+  // الحضور مرتبط بجلسات محددة (32 جلسة ثابتة)، نجلب تفاصيل الجلسة مع كل سجل
   // ونستخدم LEFT JOIN من sessions بدل INNER JOIN من attendance حتى تظهر
-  // كل الجلسات التسع للطالب، حتى التي لم تُسجَّل بعد (status تكون null)
+  // كل الجلسات للطالب، حتى التي لم تُسجَّل بعد (status تكون null)
   const [attendanceRows] = await pool.query(
     `SELECT
        sess.id AS session_id, sess.session_date, sess.day_name, sess.week_number,
@@ -60,8 +68,14 @@ async function getStudentById(id) {
     [id]
   );
 
-  // MySQL يرجع done كـ 0/1 (TINYINT)، نحوّلها لـ boolean صريح
-  student.knowledge_tasks = tasksRows.map((t) => ({ ...t, done: !!t.done }));
+  student.self_achievements = selfRows.map((r) => ({
+    week_number: r.week_number,
+    title: r.title,
+    task_points: r.task_points,
+    done: r.achievement_id !== null,
+    points: r.earned_points || 0,
+    confirmed_at: r.confirmed_at,
+  }));
   student.initiatives = initiativesRows;
   student.attendance = attendanceRows;
   student.initiatives_points = initiativesRows.reduce((sum, i) => sum + i.points, 0);
@@ -161,21 +175,21 @@ async function getStudentRankInGroup(studentId, groupId) {
 }
 
 /* -------- إضافة (أو خصم) نقاط لطالب في برنامج معين -------- */
-async function addPointsToStudent(studentId, program, amount, reason) {
-  const column = {
-    knowledge: "knowledge_points",
-  }[program];
-
+async function addPointsToStudent(studentId, program, amount, category) {
   if (program === "initiative") {
+    if (!INITIATIVE_CATEGORIES.includes(category)) {
+      return { error: "اختر أحد محاور المبادرات الأربعة" };
+    }
     // المبادرات تُسجَّل كسطر منفصل وتقبل قيمة سالبة (خصم) أيضاً
     await pool.query(
-      "INSERT INTO initiatives (student_id, title, points) VALUES (?, ?, ?)",
-      [studentId, reason || "مبادرة / تعديل نقاط", amount]
+      "INSERT INTO initiatives (student_id, category, points) VALUES (?, ?, ?)",
+      [studentId, category, amount]
     );
-    return;
+    return {};
   }
 
-  if (!column) throw new Error("برنامج غير معروف");
+  const column = { knowledge: "knowledge_points" }[program];
+  if (!column) return { error: "برنامج غير معروف" };
 
   // نمنع وصول النقاط لأقل من صفر عند الخصم
   // GREATEST() متوفرة بنفس الاسم في MySQL أيضاً
@@ -183,20 +197,16 @@ async function addPointsToStudent(studentId, program, amount, reason) {
     `UPDATE students SET ${column} = GREATEST(${column} + ?, 0) WHERE id = ?`,
     [amount, studentId]
   );
+  return {};
 }
 
-/* -------- تسجيل حضور لجلسة محددة (يدوي من المشرف أو تلقائي عبر الباركود) --------
-   اعتباراً من الأسبوع الثاني: كل حضور "حاضر" أو "متأخر" يمنح 15 نقطة حضور
-   (الأسبوع الأول مستثنى لأنه مؤرشَف ومصفَّر بالفعل). المنطق هنا يقارن
-   الحالة السابقة بالجديدة حتى لا تُضاف/تُخصم النقاط أكثر من مرة عند
-   إعادة تسجيل نفس الحالة أو التبديل بين "حاضر" و"متأخر". */
+/* -------- تسجيل حضور لجلسة محددة (يدوي من المشرف، تلقائي عبر الباركود، أو ذاتي من الطالب) --------
+   كل حضور "حاضر" أو "متأخر" يمنح 15 نقطة حضور. المنطق هنا يقارن الحالة
+   السابقة بالجديدة حتى لا تُضاف/تُخصم النقاط أكثر من مرة عند إعادة تسجيل
+   نفس الحالة أو التبديل بين "حاضر" و"متأخر". */
 async function markAttendance(studentId, status, sessionId) {
   const ATTENDANCE_POINTS = 15;
   const PRESENT_STATUSES = ["حاضر", "متأخر"];
-
-  const [sessRows] = await pool.query("SELECT week_number FROM sessions WHERE id = ?", [sessionId]);
-  const weekNumber = sessRows[0] ? sessRows[0].week_number : null;
-  const eligibleWeek = weekNumber === 2 || weekNumber === 3;
 
   const [prevRows] = await pool.query(
     "SELECT status FROM attendance WHERE student_id = ? AND session_id = ?",
@@ -211,16 +221,14 @@ async function markAttendance(studentId, status, sessionId) {
     [studentId, sessionId, status]
   );
 
-  if (eligibleWeek) {
-    const wasPresent = PRESENT_STATUSES.includes(prevStatus);
-    const isPresent = PRESENT_STATUSES.includes(status);
-    if (wasPresent !== isPresent) {
-      const delta = isPresent ? ATTENDANCE_POINTS : -ATTENDANCE_POINTS;
-      await pool.query(
-        "UPDATE students SET attendance_points = GREATEST(attendance_points + ?, 0) WHERE id = ?",
-        [delta, studentId]
-      );
-    }
+  const wasPresent = PRESENT_STATUSES.includes(prevStatus);
+  const isPresent = PRESENT_STATUSES.includes(status);
+  if (wasPresent !== isPresent) {
+    const delta = isPresent ? ATTENDANCE_POINTS : -ATTENDANCE_POINTS;
+    await pool.query(
+      "UPDATE students SET attendance_points = GREATEST(attendance_points + ?, 0) WHERE id = ?",
+      [delta, studentId]
+    );
   }
 
   const [rows] = await pool.query(
@@ -242,62 +250,50 @@ async function getAttendanceForSession(studentId, sessionId) {
   return rows[0] || null;
 }
 
-/* -------- تحديث حالة إنجاز متطلب — النقاط تُقرأ من القيمة المضبوطة مسبقاً عالمياً -------- */
-async function setKnowledgeTaskDone(taskId, done) {
-  // نجلب الحالة الحالية لنعرف كم نقطة كانت مُسجَّلة سابقاً
-  const [existing] = await pool.query(
-    "SELECT id, student_id, done, points FROM knowledge_tasks WHERE id = ?",
-    [taskId]
+/* -------- تأكيد/إلغاء إنجاز "الذاتي" لطالب في أسبوع معين --------
+   النقاط تُقرأ من weekly_self_tasks عند التأكيد وتبقى محفوظة في self_achievements
+   حتى لو تغيّرت قيمة الأسبوع لاحقاً في الإعدادات العامة */
+async function setSelfAchievementDone(studentId, weekNumber, done) {
+  const [taskRows] = await pool.query(
+    "SELECT week_number, title, points FROM weekly_self_tasks WHERE week_number = ?",
+    [weekNumber]
   );
-  if (!existing.length) return null;
+  if (!taskRows.length) return null;
+  const task = taskRows[0];
 
-  const task = existing[0];
-  const wasDone = !!task.done;
-  const prevPoints = Number(task.points) || 0;
+  const [existing] = await pool.query(
+    "SELECT id, points FROM self_achievements WHERE student_id = ? AND week_number = ?",
+    [studentId, weekNumber]
+  );
 
-  if (done && !wasDone) {
-    // إنجاز جديد: نقرأ النقاط المضبوطة مسبقاً ونضيفها للطالب
-    if (prevPoints <= 0) return { error: "لم يتم ضبط نقاط هذا المتطلب بعد، اضبطها أولاً من إعدادات النقاط" };
-    await pool.query("UPDATE knowledge_tasks SET done = TRUE WHERE id = ?", [taskId]);
+  if (done && !existing.length) {
+    if (!task.points || task.points <= 0) {
+      return { error: "لم يتم ضبط نقاط هذا الأسبوع بعد، اضبطها أولاً من إعدادات الذاتي" };
+    }
+    await pool.query(
+      "INSERT INTO self_achievements (student_id, week_number, points) VALUES (?, ?, ?)",
+      [studentId, weekNumber, task.points]
+    );
     await pool.query(
       "UPDATE students SET knowledge_points = GREATEST(knowledge_points + ?, 0) WHERE id = ?",
-      [prevPoints, task.student_id]
+      [task.points, studentId]
     );
-  } else if (!done && wasDone) {
-    // إلغاء الإنجاز: نخصم النقاط المحفوظة مسبقاً ونصفّر نقاط المتطلب
-    await pool.query("UPDATE knowledge_tasks SET done = FALSE, points = 0 WHERE id = ?", [taskId]);
+  } else if (!done && existing.length) {
+    const prevPoints = Number(existing[0].points) || 0;
+    await pool.query("DELETE FROM self_achievements WHERE id = ?", [existing[0].id]);
     await pool.query(
       "UPDATE students SET knowledge_points = GREATEST(knowledge_points - ?, 0) WHERE id = ?",
-      [prevPoints, task.student_id]
+      [prevPoints, studentId]
     );
   }
 
-  const [rows] = await pool.query(
-    "SELECT id, student_id, title, done, points FROM knowledge_tasks WHERE id = ?",
-    [taskId]
-  );
-  return { ...rows[0], done: !!rows[0].done };
+  return { week_number: weekNumber, title: task.title, done, points: done ? task.points : 0 };
 }
 
-const KNOWLEDGE_TASKS_BY_CATEGORY = {
-  "الأولوية": [
-    "قول كلمة طيبة بالمنزل",
-    "تسميع سورة الفاتحة غيباً",
-    "القيام بعمل تعاوني بالمنزل",
-  ],
-  "الفئة العليا": [
-    "ما هو الذكاء الاصطناعي",
-    "نجرب الأدوات",
-    "ابدع وفكر بنقد",
-    "مشروع ومهاراتي",
-  ],
-};
-
-/* -------- إنشاء طالب جديد (من لوحة الإدارة) مع باركود فريد ومتطلباته الأولية -------- */
+/* -------- إنشاء طالب جديد (من لوحة الإدارة) مع باركود فريد -------- */
 async function createStudent(name, groupId) {
-  const [groupRows] = await pool.query("SELECT id, category FROM `groups` WHERE id = ?", [groupId]);
+  const [groupRows] = await pool.query("SELECT id FROM `groups` WHERE id = ?", [groupId]);
   if (!groupRows.length) return { error: "المجموعة غير موجودة" };
-  const category = groupRows[0].category;
 
   const [maxRows] = await pool.query(
     "SELECT MAX(CAST(SUBSTRING(barcode, 7) AS UNSIGNED)) AS maxIdx FROM students WHERE barcode LIKE 'QC%'"
@@ -313,19 +309,12 @@ async function createStudent(name, groupId) {
   );
   const studentId = result.insertId;
 
-  for (const taskTitle of KNOWLEDGE_TASKS_BY_CATEGORY[category]) {
-    await pool.query(
-      "INSERT INTO knowledge_tasks (student_id, title, done) VALUES (?, ?, FALSE)",
-      [studentId, taskTitle]
-    );
-  }
-
   return getStudentById(studentId);
 }
 
 /* -------- نقل طالب موجود إلى أسرة أخرى (تصحيح توزيع)، مع إمكانية تصحيح الاسم -------- */
 async function moveStudentGroup(studentId, groupId, name) {
-  const [groupRows] = await pool.query("SELECT id, category FROM `groups` WHERE id = ?", [groupId]);
+  const [groupRows] = await pool.query("SELECT id FROM `groups` WHERE id = ?", [groupId]);
   if (!groupRows.length) return { error: "المجموعة غير موجودة" };
 
   const [studentRows] = await pool.query("SELECT id FROM students WHERE id = ?", [studentId]);
@@ -360,7 +349,7 @@ async function deleteStudent(name, groupId) {
   try {
     await conn.beginTransaction();
     await conn.query("DELETE FROM attendance WHERE student_id = ?", [studentId]);
-    await conn.query("DELETE FROM knowledge_tasks WHERE student_id = ?", [studentId]);
+    await conn.query("DELETE FROM self_achievements WHERE student_id = ?", [studentId]);
     await conn.query("DELETE FROM initiatives WHERE student_id = ?", [studentId]);
     await conn.query("DELETE FROM weekly_points_archive WHERE student_id = ?", [studentId]);
     await conn.query("DELETE FROM students WHERE id = ?", [studentId]);
@@ -376,6 +365,7 @@ async function deleteStudent(name, groupId) {
 }
 
 module.exports = {
+  INITIATIVE_CATEGORIES,
   getAllStudents,
   getStudentById,
   getStudentByBarcode,
@@ -385,7 +375,7 @@ module.exports = {
   addPointsToStudent,
   markAttendance,
   getAttendanceForSession,
-  setKnowledgeTaskDone,
+  setSelfAchievementDone,
   createStudent,
   moveStudentGroup,
   deleteStudent,

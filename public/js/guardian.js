@@ -264,8 +264,8 @@ document.addEventListener("DOMContentLoaded", () => {
   ------------------------------------------------------- */
   function renderStudentProfile(student, groupRank, groupSize, overallRank, totalStudents, container, scoresVisible = true) {
     const att        = getAttendanceRate(student.attendance);
-    const doneTasks  = student.knowledge_tasks.filter(t => t.done).length;
-    const totalTasks = student.knowledge_tasks.length;
+    const doneTasks  = student.self_achievements.filter(t => t.done).length;
+    const totalTasks = student.self_achievements.length;
 
     const recordedSessions = student.attendance.filter(a => a.status !== null);
     const lastStatus = recordedSessions.length
@@ -313,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="summary-card summary-tasks">
             <div class="summary-value">${doneTasks}/${totalTasks}</div>
-            <div class="summary-label">متطلبات منجزة</div>
+            <div class="summary-label">أسابيع الذاتي منجزة</div>
           </div>
         </div>
 
@@ -341,12 +341,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="att-detail-text">${att.present} حاضر • ${att.late} متأخر • ${att.absent} غايب</span>
           </div>
           ${progressBar(att.present + att.late, recordedSessions.length, attBarColor)}
-          <div class="attendance-weeks" style="margin-top:14px;">
+          <div class="attendance-weeks scrollable-weeks" style="margin-top:14px;">
             ${(() => {
               const today = new Date().toISOString().slice(0, 10);
               const pastOrToday = student.attendance.filter(a => a.session_date <= today);
               if (!pastOrToday.length) return `<p class="empty-note">لم تبدأ أي جلسة بعد</p>`;
-              return [1, 2, 3].map(weekNum => {
+              const weekNumbers = [...new Set(pastOrToday.map(a => a.week_number))].sort((a, b) => a - b);
+              return weekNumbers.map(weekNum => {
                 const weekSessions = pastOrToday.filter(a => a.week_number === weekNum);
                 if (!weekSessions.length) return "";
                 return `
@@ -370,15 +371,15 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
-        <!-- متطلبات البرنامج الذاتي مع شريط تقدم -->
+        <!-- إنجاز الذاتي الأسبوعي مع شريط تقدم -->
         <div class="section-block">
-          <h4>📘 متطلبات البرنامج الذاتي</h4>
+          <h4>📘 إنجاز الذاتي الأسبوعي</h4>
           ${progressBar(doneTasks, totalTasks, "bar-knowledge")}
-          <ul class="task-list" style="margin-top:10px;">
-            ${student.knowledge_tasks.map(t => `
+          <ul class="task-list scrollable-weeks" style="margin-top:10px;">
+            ${student.self_achievements.map(t => `
               <li class="${t.done ? "task-done" : "task-pending"}">
                 <span class="task-icon">${t.done ? "✅" : "⭕"}</span>
-                <span>${t.title}</span>
+                <span>الأسبوع ${t.week_number}: ${t.title}</span>
                 ${t.done && t.points ? `<span class="task-pts-badge">+${t.points}</span>` : ""}
               </li>
             `).join("")}
@@ -392,7 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <ul class="initiative-list">
               ${student.initiatives.map(i => `
                 <li>
-                  <span>${i.title}</span>
+                  <span>${i.category}</span>
                   <span class="initiative-points ${i.points < 0 ? 'initiative-negative' : ''}">${i.points >= 0 ? "+" : ""}${i.points} نقطة</span>
                   <span class="initiative-date">${formatDateArabic(i.created_at)}</span>
                 </li>

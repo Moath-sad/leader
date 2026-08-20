@@ -457,6 +457,20 @@ input, select { font-family: inherit; }
   margin: 30px 0 14px;
 }
 
+.panel-group-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--navy);
+  font-size: 17px;
+  margin: 34px 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-group-title:first-of-type { margin-top: 22px; }
+
 /* ---------------------------------------------------------
    الأزرار العامة
    --------------------------------------------------------- */
@@ -1044,7 +1058,7 @@ input, select { font-family: inherit; }
 }
 
 /* ---------------------------------------------------------
-   سجل الحضور بالجلسات الثابتة (3 أسابيع × 3 أيام)
+   سجل الحضور بالجلسات الثابتة (16 أسبوعاً × يومين)
    --------------------------------------------------------- */
 .attendance-weeks {
   display: flex;
@@ -1052,16 +1066,25 @@ input, select { font-family: inherit; }
   gap: 14px;
 }
 
+.scrollable-weeks {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-left: 4px;
+  scrollbar-width: thin;
+}
+
 .attendance-week-title {
   font-size: 12.5px;
   font-weight: 700;
   color: var(--ink-soft);
   margin-bottom: 8px;
+  position: sticky;
+  top: 0;
 }
 
 .attendance-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
@@ -1428,7 +1451,7 @@ input, select { font-family: inherit; }
   .club-quick-facts { flex-direction: column; }
   .quick-fact { min-width: unset; }
   .club-logo-img { max-width: 260px; }
-  .attendance-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .attendance-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .att-chip { padding: 7px 4px; }
   .att-chip-status { font-size: 11px; }
   .quick-search-box { flex-direction: column; align-items: stretch; }
@@ -1442,7 +1465,14 @@ input, select { font-family: inherit; }
   border-bottom: 1px solid var(--cream-dark);
 }
 .task-config-row:last-child { border-bottom: none; }
-.task-config-title { flex: 1; font-size: 14px; color: var(--ink); }
+.task-config-title { flex: 0 0 auto; min-width: 66px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.task-config-title-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
 .task-config-input,
 .home-task-config-input {
   width: 75px;
@@ -1452,6 +1482,7 @@ input, select { font-family: inherit; }
   font-size: 13px;
   text-align: center;
 }
+.task-config-title-input:focus,
 .task-config-input:focus,
 .home-task-config-input:focus { border-color: var(--teal); outline: none; }
 .task-config-group-title {

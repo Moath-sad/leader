@@ -23,6 +23,7 @@
       <a href="/" class="nav-btn <%= activeNav === 'home' ? 'active' : '' %>">الرئيسية</a>
       <a href="/guardian" class="nav-btn <%= activeNav === 'guardian' ? 'active' : '' %>">ملف الطالب</a>
       <a href="/groups" class="nav-btn <%= activeNav === 'groups' ? 'active' : '' %>">المجموعات</a>
+      <a href="/daily-attendance" class="nav-btn <%= activeNav === 'daily-attendance' ? 'active' : '' %>">التحضير اليومي</a>
       <% if (isSupervisor) { %>
         <a href="/supervisor/panel" class="nav-btn <%= activeNav === 'supervisor' ? 'active' : '' %>">المشرفين</a>
       <% } else { %>
