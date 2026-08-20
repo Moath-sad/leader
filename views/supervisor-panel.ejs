@@ -60,12 +60,23 @@
         <h4>🌟 تسجيل مبادرة</h4>
         <form id="initiativeForm">
           <div class="form-group">
-            <label for="initiativeStudentSearch">اختر الطالب</label>
+            <label for="initiativeStudentSearch">اختر الطالب (بالاسم)</label>
             <div class="search-box-wrapper" style="margin-bottom:0;">
               <input type="text" id="initiativeStudentSearch" class="search-input" placeholder="اكتب اسم الطالب..." autocomplete="off">
               <div class="search-results" id="initiativeStudentResults"></div>
             </div>
             <input type="hidden" id="initiativeStudentSelect">
+          </div>
+          <div class="form-group">
+            <label>أو اختر الطالب من الأسرة</label>
+            <div style="display:flex; gap:10px;">
+              <select id="initiativeGroupPicker" class="form-select" style="flex:1;">
+                <option value="">اختر الأسرة</option>
+              </select>
+              <select id="initiativeStudentPicker" class="form-select" style="flex:1;" disabled>
+                <option value="">اختر الطالب</option>
+              </select>
+            </div>
           </div>
           <div class="form-group">
             <label for="initiativeCategorySelect">محور المبادرة</label>
@@ -104,12 +115,23 @@
       <div class="panel-box">
         <h4>تقييم إنجاز الذاتي الأسبوعي</h4>
         <div class="form-group">
-          <label for="tasksStudentSearch">اختر الطالب</label>
+          <label for="tasksStudentSearch">اختر الطالب (بالاسم)</label>
           <div class="search-box-wrapper" style="margin-bottom:0;">
             <input type="text" id="tasksStudentSearch" class="search-input" placeholder="اكتب اسم الطالب..." autocomplete="off">
             <div class="search-results" id="tasksStudentResults"></div>
           </div>
           <input type="hidden" id="tasksStudentSelect">
+        </div>
+        <div class="form-group">
+          <label>أو اختر الطالب من الأسرة</label>
+          <div style="display:flex; gap:10px;">
+            <select id="tasksGroupPicker" class="form-select" style="flex:1;">
+              <option value="">اختر الأسرة</option>
+            </select>
+            <select id="tasksStudentPicker" class="form-select" style="flex:1;" disabled>
+              <option value="">اختر الطالب</option>
+            </select>
+          </div>
         </div>
         <div id="knowledgeTasksList" class="knowledge-tasks-list scrollable-weeks"></div>
         <p class="form-msg" id="tasksMsg"></p>

@@ -334,6 +334,66 @@ function setupStudentSearchSelects() {
     loadKnowledgeTasks(id);
   });
   setupStudentSearchSelect("moveStudentSearch", "moveStudentResults", "moveStudentSelect", students);
+
+  setupGroupStudentPicker("initiativeGroupPicker", "initiativeStudentPicker", "initiativeStudentSelect", "initiativeStudentSearch", students);
+  setupGroupStudentPicker("tasksGroupPicker", "tasksStudentPicker", "tasksStudentSelect", "tasksStudentSearch", students, (id) => {
+    loadKnowledgeTasks(id);
+  });
+}
+
+/* =========================================================
+   0.05) اختيار الطالب عبر أسرته (بديل للبحث بالكتابة)
+   ========================================================= */
+function setupGroupStudentPicker(groupSelectId, studentSelectId, hiddenId, searchInputId, students, onSelect) {
+  const groupSelect = document.getElementById(groupSelectId);
+  const studentSelect = document.getElementById(studentSelectId);
+  const hidden = document.getElementById(hiddenId);
+  const searchInput = document.getElementById(searchInputId);
+  if (!groupSelect || !studentSelect || !hidden) return;
+
+  const byGroup = {};
+  students.forEach((s) => {
+    if (!byGroup[s.group]) byGroup[s.group] = [];
+    byGroup[s.group].push(s);
+  });
+
+  Object.keys(byGroup).sort((a, b) => a.localeCompare(b, "ar")).forEach((groupName) => {
+    const opt = document.createElement("option");
+    opt.value = groupName;
+    opt.textContent = groupName;
+    groupSelect.appendChild(opt);
+  });
+
+  groupSelect.addEventListener("change", () => {
+    studentSelect.innerHTML = `<option value="">اختر الطالب</option>`;
+    hidden.value = "";
+    hidden.dataset.name = "";
+    const groupName = groupSelect.value;
+    if (!groupName) {
+      studentSelect.disabled = true;
+      return;
+    }
+    byGroup[groupName].forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.name;
+      studentSelect.appendChild(opt);
+    });
+    studentSelect.disabled = false;
+  });
+
+  studentSelect.addEventListener("change", () => {
+    const selectedOption = studentSelect.selectedOptions[0];
+    if (!studentSelect.value) {
+      hidden.value = "";
+      hidden.dataset.name = "";
+      return;
+    }
+    hidden.value = studentSelect.value;
+    hidden.dataset.name = selectedOption.textContent;
+    if (searchInput) searchInput.value = selectedOption.textContent;
+    if (onSelect) onSelect(studentSelect.value);
+  });
 }
 
 function setupStudentSearchSelect(inputId, resultsId, hiddenId, students, onSelect) {
