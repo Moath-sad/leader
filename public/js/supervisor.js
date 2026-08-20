@@ -329,26 +329,21 @@ function setupStudentSearchSelects() {
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
 
-  setupStudentSearchSelect("initiativeStudentSearch", "initiativeStudentResults", "initiativeStudentSelect", students);
-  setupStudentSearchSelect("tasksStudentSearch", "tasksStudentResults", "tasksStudentSelect", students, (id) => {
-    loadKnowledgeTasks(id);
-  });
   setupStudentSearchSelect("moveStudentSearch", "moveStudentResults", "moveStudentSelect", students);
 
-  setupGroupStudentPicker("initiativeGroupPicker", "initiativeStudentPicker", "initiativeStudentSelect", "initiativeStudentSearch", students);
-  setupGroupStudentPicker("tasksGroupPicker", "tasksStudentPicker", "tasksStudentSelect", "tasksStudentSearch", students, (id) => {
+  setupGroupStudentPicker("initiativeGroupPicker", "initiativeStudentPicker", "initiativeStudentSelect", students);
+  setupGroupStudentPicker("tasksGroupPicker", "tasksStudentPicker", "tasksStudentSelect", students, (id) => {
     loadKnowledgeTasks(id);
   });
 }
 
 /* =========================================================
-   0.05) اختيار الطالب عبر أسرته (بديل للبحث بالكتابة)
+   0.05) اختيار الطالب عبر أسرته (أسرة ثم طالب، بدون كتابة)
    ========================================================= */
-function setupGroupStudentPicker(groupSelectId, studentSelectId, hiddenId, searchInputId, students, onSelect) {
+function setupGroupStudentPicker(groupSelectId, studentSelectId, hiddenId, students, onSelect) {
   const groupSelect = document.getElementById(groupSelectId);
   const studentSelect = document.getElementById(studentSelectId);
   const hidden = document.getElementById(hiddenId);
-  const searchInput = document.getElementById(searchInputId);
   if (!groupSelect || !studentSelect || !hidden) return;
 
   const byGroup = {};
@@ -391,7 +386,6 @@ function setupGroupStudentPicker(groupSelectId, studentSelectId, hiddenId, searc
     }
     hidden.value = studentSelect.value;
     hidden.dataset.name = selectedOption.textContent;
-    if (searchInput) searchInput.value = selectedOption.textContent;
     if (onSelect) onSelect(studentSelect.value);
   });
 }
