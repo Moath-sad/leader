@@ -182,17 +182,7 @@
       <div class="stat-display-card">
         <span class="sdc-icon">🟦</span>
         <span class="sdc-value" id="statKnowledge"><%= stats.totalKnowledge %></span>
-        <span class="sdc-label">نقاط المعرفي</span>
-      </div>
-      <div class="stat-display-card">
-        <span class="sdc-icon">⚽</span>
-        <span class="sdc-value" id="statSports"><%= stats.totalSports %></span>
-        <span class="sdc-label">نقاط الرياضي</span>
-      </div>
-      <div class="stat-display-card">
-        <span class="sdc-icon">🎭</span>
-        <span class="sdc-value" id="statCultural"><%= stats.totalCultural %></span>
-        <span class="sdc-label">نقاط الترفيهي</span>
+        <span class="sdc-label">نقاط الذاتي</span>
       </div>
     </div>
     <div class="session-banner" id="sessionBanner">⏳ جارٍ تحميل الجلسة...</div>
@@ -275,8 +265,6 @@
       document.getElementById('statAttendance').textContent = data.stats.attendanceRate;
       document.getElementById('statGroups').textContent     = data.stats.totalGroups;
       document.getElementById('statKnowledge').textContent  = data.stats.totalKnowledge;
-      document.getElementById('statSports').textContent     = data.stats.totalSports;
-      document.getElementById('statCultural').textContent   = data.stats.totalCultural;
 
       /* الجلسة الحالية */
       if (data.currentSession) {

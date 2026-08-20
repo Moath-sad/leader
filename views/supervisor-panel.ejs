@@ -129,9 +129,7 @@
             <label for="programSelect">اللجنة / البرنامج</label>
             <% if (role === 'admin') { %>
               <select id="programSelect" class="form-select">
-                <option value="knowledge">البرنامج المعرفي</option>
-                <option value="sports">البرنامج الرياضي</option>
-                <option value="cultural">البرنامج الترفيهي</option>
+                <option value="knowledge">البرنامج الذاتي</option>
                 <option value="initiative">مبادرة / إنجاز مميز</option>
               </select>
             <% } else { %>
@@ -204,14 +202,14 @@
     </div>
 
     <!-- =========================================================
-         تقييم متطلبات البرنامج المعرفي
+         تقييم متطلبات البرنامج الذاتي
          الطالب يُخبر المشرف شفهياً/شخصياً بإنجاز متطلب معين،
          والمشرف هو من يحدّد ذلك هنا (وليس الطالب تلقائياً)
          ========================================================= -->
     <% if (role === 'admin') { %>
     <!-- إعداد نقاط المتطلبات عالمياً (مرة واحدة لكل المتطلبات) -->
     <div class="panel-box knowledge-tasks-box">
-      <h4>⚙️ ضبط نقاط متطلبات البرنامج المعرفي</h4>
+      <h4>⚙️ ضبط نقاط متطلبات البرنامج الذاتي</h4>
       <p class="section-desc" style="margin-bottom:12px; font-size:13px;">حدد نقاط كل متطلب مرة واحدة — ستُطبَّق على جميع الطلاب عند تحديد إنجازهم</p>
       <div id="taskConfigList" class="knowledge-tasks-list"></div>
       <button type="button" id="saveTaskConfigBtn" class="btn btn-primary" style="margin-top:12px; width:100%;">حفظ النقاط</button>
@@ -220,7 +218,7 @@
 
     <!-- تقييم متطلبات كل طالب -->
     <div class="panel-box knowledge-tasks-box">
-      <h4>تقييم متطلبات البرنامج المعرفي</h4>
+      <h4>تقييم متطلبات البرنامج الذاتي</h4>
       <div class="form-group">
         <label for="tasksStudentSearch">اختر الطالب</label>
         <div class="search-box-wrapper" style="margin-bottom:0;">
@@ -232,34 +230,7 @@
       <div id="knowledgeTasksList" class="knowledge-tasks-list"></div>
       <p class="form-msg" id="tasksMsg"></p>
     </div>
-
-    <!-- إعداد نقاط التكاليف المنزلية عالمياً (نفس القائمة لكل الطلاب) -->
-    <div class="panel-box knowledge-tasks-box">
-      <h4>⚙️ ضبط نقاط التكاليف المنزلية</h4>
-      <p class="section-desc" style="margin-bottom:12px; font-size:13px;">حدد نقاط كل تكليف مرة واحدة — ستُطبَّق على جميع الطلاب عند تحديد إنجازهم</p>
-      <div id="homeTaskConfigList" class="knowledge-tasks-list"></div>
-      <button type="button" id="saveHomeTaskConfigBtn" class="btn btn-primary" style="margin-top:12px; width:100%;">حفظ النقاط</button>
-      <p class="form-msg" id="homeTaskConfigMsg"></p>
-    </div>
     <% } %>
-
-    <!-- =========================================================
-         تقييم التكاليف المنزلية: بحث عن الطالب ووضع صح عند الإنجاز
-         متاحة للإدارة والمشرفين معاً
-         ========================================================= -->
-    <div class="panel-box knowledge-tasks-box">
-      <h4>🏠 تقييم التكاليف المنزلية</h4>
-      <div class="form-group">
-        <label for="homeTasksStudentSearch">اختر الطالب</label>
-        <div class="search-box-wrapper" style="margin-bottom:0;">
-          <input type="text" id="homeTasksStudentSearch" class="search-input" placeholder="اكتب اسم الطالب..." autocomplete="off">
-          <div class="search-results" id="homeTasksStudentResults"></div>
-        </div>
-        <input type="hidden" id="homeTasksStudentSelect">
-      </div>
-      <div id="homeTasksList" class="knowledge-tasks-list"></div>
-      <p class="form-msg" id="homeTasksMsg"></p>
-    </div>
 
     <!-- =========================================================
          مسح الباركود لتسجيل الحضور التلقائي
@@ -304,7 +275,7 @@
     <div class="scores-visibility-box">
       <div class="scores-status-info">
         <strong>🗄️ أرشفة نقاط الأسبوع وتصفيرها</strong>
-        <small class="scores-status-hint">يحفظ نقاط معرفي/رياضي/ترفيهي الحالية لكل الطلاب في أرشيف الأسبوع المحدد، ثم يصفّرها لبدء أسبوع جديد. المبادرات لا تتأثر إطلاقاً.</small>
+        <small class="scores-status-hint">يحفظ نقاط الذاتي الحالية لكل الطلاب في أرشيف الأسبوع المحدد، ثم يصفّرها لبدء أسبوع جديد. المبادرات لا تتأثر إطلاقاً.</small>
       </div>
       <div class="scores-pin-area">
         <input type="number" id="archiveWeekInput" class="form-input scores-pin-input" placeholder="رقم الأسبوع (مثال: 1)" min="1" style="width:150px;">
@@ -322,11 +293,8 @@
             <th>#</th>
             <th>الاسم</th>
             <th>المجموعة</th>
-            <th class="col-scores">معرفي</th>
-            <th class="col-scores">رياضي</th>
-            <th class="col-scores">ثقافي</th>
+            <th class="col-scores">الذاتي</th>
             <th class="col-scores">حضور</th>
-            <th class="col-scores">تكاليف منزلية</th>
             <th class="col-scores">الإجمالي</th>
             <th>الحضور (9 جلسات)</th>
             <th>الباركود</th>
@@ -339,10 +307,7 @@
               <td><%= s.name %></td>
               <td><%= s.group_name %></td>
               <td class="cell-knowledge col-scores"><%= s.knowledge_points %></td>
-              <td class="cell-sports col-scores"><%= s.sports_points %></td>
-              <td class="cell-cultural col-scores"><%= s.cultural_points %></td>
               <td class="cell-attendance-points col-scores"><%= s.attendance_points %></td>
-              <td class="cell-home-tasks-points col-scores"><%= s.home_tasks_points %></td>
               <td class="cell-total col-scores"><strong><%= s.total_points %></strong></td>
               <td class="cell-attendance">
                 <div class="att-dots">

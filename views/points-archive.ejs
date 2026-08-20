@@ -30,9 +30,7 @@
               <th>#</th>
               <th>الاسم</th>
               <th>المجموعة</th>
-              <th>معرفي</th>
-              <th>رياضي</th>
-              <th>ترفيهي</th>
+              <th>الذاتي</th>
               <th>الإجمالي</th>
             </tr>
           </thead>
@@ -43,8 +41,6 @@
                 <td><%= r.name %></td>
                 <td><%= r.group_name %></td>
                 <td><%= r.knowledge_points %></td>
-                <td><%= r.sports_points %></td>
-                <td><%= r.cultural_points %></td>
                 <td><strong><%= r.total_points %></strong></td>
               </tr>
             <% }) %>

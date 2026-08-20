@@ -37,7 +37,7 @@ const SAMPLE_NAMES = [
   "كريم نواف العتيبي", "عبدالرحمن ياسر الدوسري", "تميم بشير العنزي",
 ];
 
-// متطلبات مختلفة حسب المرحلة: 3 للمرحلة الأولية (الدنيا) و4 للمرحلة العليا
+// متطلبات البرنامج الذاتي، مختلفة حسب المرحلة: 3 للمرحلة الأولية (الدنيا) و4 للمرحلة العليا
 const KNOWLEDGE_TASKS_BY_CATEGORY = {
   "الأولوية": [
     "قول كلمة طيبة بالمنزل",
@@ -51,12 +51,6 @@ const KNOWLEDGE_TASKS_BY_CATEGORY = {
     "مشروع ومهاراتي",
   ],
 };
-
-// التكاليف المنزلية: نفس القائمة لكل الطلاب بلا استثناء (أولية وعليا)
-const HOME_TASKS_TEMPLATE = [
-  { title: "اذكار الصباح", description: "الأسبوع الثاني" },
-  { title: "اذكار المساء", description: "الأسبوع الثالث" },
-];
 
 function generateBarcodeId(index) {
   const year = new Date().getFullYear();
@@ -115,31 +109,21 @@ async function run() {
       const barcode = generateBarcodeId(barcodeCounter++);
 
       const knowledgePoints = Math.floor(Math.random() * 60) + 10;
-      const sportsPoints = Math.floor(Math.random() * 60) + 10;
-      const culturalPoints = Math.floor(Math.random() * 60) + 10;
       const guardianPhone = "05" + Math.floor(10000000 + Math.random() * 89999999);
 
       // mysql2 يرجع [rows, fields] دائماً، والـ insertId يوصلنا له عبر rows.insertId
       const [studentResult] = await connection.query(
-        `INSERT INTO students (barcode, name, name_normalized, group_id, knowledge_points, sports_points, cultural_points, guardian_phone)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [barcode, name, normalizeArabic(name), groupId, knowledgePoints, sportsPoints, culturalPoints, guardianPhone]
+        `INSERT INTO students (barcode, name, name_normalized, group_id, knowledge_points, guardian_phone)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [barcode, name, normalizeArabic(name), groupId, knowledgePoints, guardianPhone]
       );
       const studentId = studentResult.insertId;
 
-      // متطلبات البرنامج المعرفي — تبدأ كلها "غير مُنجزة" حتى يقيّمها المشرف فعلياً
+      // متطلبات البرنامج الذاتي — تبدأ كلها "غير مُنجزة" حتى يقيّمها المشرف فعلياً
       for (const taskTitle of KNOWLEDGE_TASKS_BY_CATEGORY[groupCategory]) {
         await connection.query(
           "INSERT INTO knowledge_tasks (student_id, title, done) VALUES (?, ?, FALSE)",
           [studentId, taskTitle]
-        );
-      }
-
-      // التكاليف المنزلية — نفس القائمة لكل الطلاب بلا استثناء
-      for (const { title, description } of HOME_TASKS_TEMPLATE) {
-        await connection.query(
-          "INSERT INTO home_tasks (student_id, title, description, done, points) VALUES (?, ?, ?, FALSE, 25)",
-          [studentId, title, description]
         );
       }
 

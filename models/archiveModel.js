@@ -6,29 +6,25 @@
 
 const pool = require("../config/db");
 
-/* -------- أرشفة النقاط الحالية لكل الطلاب تحت رقم أسبوع معين، ثم تصفير knowledge/sports/cultural -------- */
+/* -------- أرشفة النقاط الحالية لكل الطلاب تحت رقم أسبوع معين، ثم تصفير الذاتي -------- */
 async function archiveAndResetPoints(weekNumber) {
-  const [students] = await pool.query(
-    "SELECT id, knowledge_points, sports_points, cultural_points FROM students"
-  );
+  const [students] = await pool.query("SELECT id, knowledge_points FROM students");
 
   for (const s of students) {
-    const total = s.knowledge_points + s.sports_points + s.cultural_points;
+    const total = s.knowledge_points;
     await pool.query(
       `INSERT INTO weekly_points_archive
-         (student_id, week_number, knowledge_points, sports_points, cultural_points, total_points)
-       VALUES (?, ?, ?, ?, ?, ?)
+         (student_id, week_number, knowledge_points, total_points)
+       VALUES (?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          knowledge_points = VALUES(knowledge_points),
-         sports_points = VALUES(sports_points),
-         cultural_points = VALUES(cultural_points),
          total_points = VALUES(total_points),
          archived_at = CURRENT_TIMESTAMP`,
-      [s.id, weekNumber, s.knowledge_points, s.sports_points, s.cultural_points, total]
+      [s.id, weekNumber, s.knowledge_points, total]
     );
   }
 
-  await pool.query("UPDATE students SET knowledge_points = 0, sports_points = 0, cultural_points = 0");
+  await pool.query("UPDATE students SET knowledge_points = 0");
 
   return students.length;
 }
@@ -45,7 +41,7 @@ async function getArchivedWeekNumbers() {
 async function getArchiveByWeek(weekNumber) {
   const [rows] = await pool.query(
     `SELECT wpa.student_id, s.name, g.name AS group_name,
-       wpa.knowledge_points, wpa.sports_points, wpa.cultural_points, wpa.total_points, wpa.archived_at
+       wpa.knowledge_points, wpa.total_points, wpa.archived_at
      FROM weekly_points_archive wpa
      JOIN students s ON s.id = wpa.student_id
      JOIN \`groups\` g ON g.id = s.group_id

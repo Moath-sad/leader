@@ -26,8 +26,5 @@ router.get("/api/supervisor/task-config", requireAdminApi, supervisorController.
 router.post("/api/supervisor/task-config", requireAdminApi, supervisorController.saveTaskConfig);
 router.post("/api/supervisor/toggle-scores", requireAdminApi, supervisorController.toggleScoresVisible);
 router.post("/api/supervisor/archive-week", requireAdminApi, supervisorController.archiveWeekPoints);
-router.post("/api/supervisor/home-tasks", requireSupervisorApi, supervisorController.setHomeTaskStatus);
-router.get("/api/supervisor/home-task-config", requireAdminApi, supervisorController.getHomeTaskConfig);
-router.post("/api/supervisor/home-task-config", requireAdminApi, supervisorController.saveHomeTaskConfig);
 
 module.exports = router;

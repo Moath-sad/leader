@@ -266,8 +266,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const att        = getAttendanceRate(student.attendance);
     const doneTasks  = student.knowledge_tasks.filter(t => t.done).length;
     const totalTasks = student.knowledge_tasks.length;
-    const doneHomeTasks  = student.home_tasks.filter(t => t.done).length;
-    const totalHomeTasks = student.home_tasks.length;
 
     const recordedSessions = student.attendance.filter(a => a.status !== null);
     const lastStatus = recordedSessions.length
@@ -325,16 +323,8 @@ document.addEventListener("DOMContentLoaded", () => {
           <h4>📊 تفاصيل النقاط</h4>
           <div class="points-detail-list">
             <div class="points-detail-row">
-              <span class="pd-label">📘 البرنامج المعرفي</span>
+              <span class="pd-label">📘 البرنامج الذاتي</span>
               <span class="pd-value knowledge-color">${student.knowledge_points}</span>
-            </div>
-            <div class="points-detail-row">
-              <span class="pd-label">⚽ البرنامج الرياضي</span>
-              <span class="pd-value sports-color">${student.sports_points}</span>
-            </div>
-            <div class="points-detail-row">
-              <span class="pd-label">🎭 البرنامج الترفيهي</span>
-              <span class="pd-value cultural-color">${student.cultural_points}</span>
             </div>
             <div class="points-detail-row">
               <span class="pd-label">🎟️ نقاط الحضور</span>
@@ -380,30 +370,15 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
-        <!-- متطلبات البرنامج المعرفي مع شريط تقدم -->
+        <!-- متطلبات البرنامج الذاتي مع شريط تقدم -->
         <div class="section-block">
-          <h4>📘 متطلبات البرنامج المعرفي</h4>
+          <h4>📘 متطلبات البرنامج الذاتي</h4>
           ${progressBar(doneTasks, totalTasks, "bar-knowledge")}
           <ul class="task-list" style="margin-top:10px;">
             ${student.knowledge_tasks.map(t => `
               <li class="${t.done ? "task-done" : "task-pending"}">
                 <span class="task-icon">${t.done ? "✅" : "⭕"}</span>
                 <span>${t.title}</span>
-                ${t.done && t.points ? `<span class="task-pts-badge">+${t.points}</span>` : ""}
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-
-        <!-- التكاليف المنزلية -->
-        <div class="section-block">
-          <h4>🏠 التكاليف المنزلية</h4>
-          ${progressBar(doneHomeTasks, totalHomeTasks, "bar-knowledge")}
-          <ul class="task-list" style="margin-top:10px;">
-            ${student.home_tasks.map(t => `
-              <li class="${t.done ? "task-done" : "task-pending"}">
-                <span class="task-icon">${t.done ? "✅" : "⭕"}</span>
-                <span>${t.title}${t.description ? ` <small style="opacity:0.7;">— ${t.description}</small>` : ""}</span>
                 ${t.done && t.points ? `<span class="task-pts-badge">+${t.points}</span>` : ""}
               </li>
             `).join("")}

@@ -8,10 +8,7 @@ const pool = require("../config/db");
 /* -------- إحصائيات شاملة للصفحة الرئيسية -------- */
 async function getHomeStats() {
   const [totalsRows] = await pool.query(`
-    SELECT
-      COALESCE(SUM(s.knowledge_points), 0) AS total_knowledge,
-      COALESCE(SUM(s.sports_points), 0) AS total_sports,
-      COALESCE(SUM(s.cultural_points), 0) AS total_cultural
+    SELECT COALESCE(SUM(s.knowledge_points), 0) AS total_knowledge
     FROM students s
   `);
 
@@ -43,8 +40,6 @@ async function getHomeStats() {
     totalGroups: Number(groupCountRows[0].c),
     attendanceRate,
     totalKnowledge: Number(totals.total_knowledge),
-    totalSports: Number(totals.total_sports),
-    totalCultural: Number(totals.total_cultural),
     totalInitiatives: Number(initiativesRows[0].total_initiatives),
   };
 }

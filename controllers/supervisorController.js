@@ -272,9 +272,7 @@ async function addPoints(req, res, next) {
 
     const actionLabel = mode === "subtract" ? "خصم" : "إضافة";
     const programLabel = {
-      knowledge: "البرنامج المعرفي",
-      sports: "البرنامج الرياضي",
-      cultural: "البرنامج الثقافي",
+      knowledge: "البرنامج الذاتي",
       initiative: "المبادرات",
     }[program] || program;
 
@@ -358,8 +356,7 @@ async function scanBarcodeAttendance(req, res, next) {
   }
 }
 
-/* -------- API: تحديد متطلب من متطلبات البرنامج المعرفي كمُنجز أو لا (تقييم المشرف) -------- */
-/* -------- API: جلب إعدادات نقاط المتطلبات (قيمة واحدة لكل عنوان) -------- */
+/* -------- API: جلب إعدادات نقاط متطلبات البرنامج الذاتي (قيمة واحدة لكل عنوان) -------- */
 async function getTaskConfig(req, res, next) {
   try {
     const [rows] = await pool.query(`
@@ -418,62 +415,6 @@ async function setKnowledgeTaskStatus(req, res, next) {
   }
 }
 
-/* -------- API: جلب إعدادات نقاط التكاليف المنزلية (نفس القائمة لكل الطلاب) -------- */
-async function getHomeTaskConfig(req, res, next) {
-  try {
-    const [rows] = await pool.query(
-      "SELECT title, description, MAX(points) AS points FROM home_tasks GROUP BY title, description ORDER BY MIN(id)"
-    );
-    res.json({ success: true, config: rows });
-  } catch (err) { next(err); }
-}
-
-/* -------- API: حفظ نقاط التكاليف المنزلية عالمياً (لكل طالب لم يُنجز بعد) -------- */
-async function saveHomeTaskConfig(req, res, next) {
-  try {
-    const { configs } = req.body; // [{title, points}, ...]
-    if (!Array.isArray(configs)) return res.status(400).json({ success: false });
-
-    for (const { title, points } of configs) {
-      const pts = Math.max(0, Number(points) || 0);
-      await pool.query(
-        "UPDATE home_tasks SET points = ? WHERE title = ? AND done = FALSE",
-        [pts, title]
-      );
-    }
-    res.json({ success: true });
-  } catch (err) { next(err); }
-}
-
-/* -------- API: تحديد تكليف منزلي كمُنجز أو لا (تقييم المشرف) -------- */
-async function setHomeTaskStatus(req, res, next) {
-  try {
-    const { taskId, done } = req.body;
-    const taskIdNum = Number(taskId);
-
-    if (!taskIdNum || typeof done !== "boolean") {
-      return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
-    }
-
-    const task = await studentModel.setHomeTaskDone(taskIdNum, done);
-    if (!task) {
-      return res.status(404).json({ success: false, message: "التكليف غير موجود" });
-    }
-    if (task.error) {
-      return res.status(400).json({ success: false, message: task.error });
-    }
-
-    await pool.query(
-      "INSERT INTO activity_log (action) VALUES (?)",
-      [`تحديث تكليف "${task.title}" إلى ${done ? "مُنجز" : "غير مُنجز"}`]
-    );
-
-    res.json({ success: true, task });
-  } catch (err) {
-    next(err);
-  }
-}
-
 /* -------- API: تبديل ظهور النقاط لعامة الزوار -------- */
 async function toggleScoresVisible(req, res, next) {
   try {
@@ -489,7 +430,7 @@ async function toggleScoresVisible(req, res, next) {
   }
 }
 
-/* -------- API: أرشفة نقاط الأسبوع الحالية ثم تصفير knowledge/sports/cultural (المبادرات لا تتأثر) -------- */
+/* -------- API: أرشفة نقاط الأسبوع الحالية ثم تصفير الذاتي (المبادرات لا تتأثر) -------- */
 async function archiveWeekPoints(req, res, next) {
   try {
     const weekNumber = Number(req.body.weekNumber);
@@ -544,9 +485,6 @@ module.exports = {
   setKnowledgeTaskStatus,
   getTaskConfig,
   saveTaskConfig,
-  setHomeTaskStatus,
-  getHomeTaskConfig,
-  saveHomeTaskConfig,
   toggleScoresVisible,
   archiveWeekPoints,
   showPointsArchive,
