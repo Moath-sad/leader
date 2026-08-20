@@ -478,6 +478,43 @@ async function showPointsArchive(req, res, next) {
   }
 }
 
+/* -------- API: تحديث رقم جوال طالب -------- */
+async function updateStudentPhone(req, res, next) {
+  try {
+    const studentId = Number(req.body.studentId);
+    const phone = (req.body.phone || "").trim();
+
+    if (!studentId) {
+      return res.status(400).json({ success: false, message: "أدخل بيانات صحيحة" });
+    }
+    if (phone && !/^05\d{8}$/.test(phone)) {
+      return res.status(400).json({ success: false, message: "رقم الجوال يجب أن يكون بصيغة سعودية صحيحة (05xxxxxxxx)" });
+    }
+
+    await studentModel.updateStudentPhone(studentId, phone || null);
+    res.json({ success: true, phone });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* -------- صفحة تذكير نهاية الأسبوع (واتساب) -------- */
+async function showWeeklyReminders(req, res, next) {
+  try {
+    const weekNumber = Math.min(16, Math.max(1, Number(req.query.week) || 1));
+    const list = await studentModel.getWeeklyReminderList(weekNumber);
+
+    res.render("weekly-reminders", {
+      pageTitle: "تذكير نهاية الأسبوع",
+      activeNav: "supervisor",
+      weekNumber,
+      list,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   showLoginPage,
   handleLogin,
@@ -497,4 +534,6 @@ module.exports = {
   toggleScoresVisible,
   archiveWeekPoints,
   showPointsArchive,
+  updateStudentPhone,
+  showWeeklyReminders,
 };

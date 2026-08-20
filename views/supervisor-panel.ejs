@@ -5,6 +5,7 @@
       <h3 class="panel-welcome">مرحباً بك، <%= role === 'admin' ? 'أيها المدير' : 'أيها المشرف' %></h3>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a href="/daily-attendance" class="btn btn-outline btn-small">📋 التحضير اليومي</a>
+        <a href="/supervisor/weekly-reminders" class="btn btn-gold btn-small">📤 تذكير نهاية الأسبوع</a>
         <a href="/supervisor/points-archive" class="btn btn-gold btn-small">🗄️ أرشيف النقاط</a>
         <form method="POST" action="/supervisor/logout">
           <button type="submit" class="btn btn-outline btn-small">تسجيل الخروج</button>
@@ -253,6 +254,7 @@
             <th class="col-scores">حضور</th>
             <th class="col-scores">الإجمالي</th>
             <th>الحضور</th>
+            <th>الجوال</th>
             <th>الباركود</th>
           </tr>
         </thead>
@@ -278,6 +280,14 @@
                     <span class="att-dot <%= cls %>" title="أسبوع <%= sess.week_number %> <%= sess.day_name %>"><%= icon %></span>
                   <% }) %>
                 </div>
+              </td>
+              <td>
+                <% if (role === 'admin') { %>
+                  <input type="text" class="form-input phone-input" data-student-id="<%= s.id %>"
+                    value="<%= s.guardian_phone || '' %>" placeholder="05xxxxxxxx" style="width:110px; font-size:12px;">
+                <% } else { %>
+                  <%= s.guardian_phone || '—' %>
+                <% } %>
               </td>
               <td>
                 <button type="button" class="btn-show-barcode" data-barcode="<%= s.barcode %>" data-name="<%= s.name %>">

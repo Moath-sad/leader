@@ -100,7 +100,9 @@ async function run() {
       const barcode = generateBarcodeId(barcodeCounter++);
 
       const knowledgePoints = week1Tasks.reduce((sum, t) => sum + t.points, 0); // يطابق إنجاز متطلبي الأسبوع الأول
-      const guardianPhone = "05" + Math.floor(10000000 + Math.random() * 89999999);
+      const guardianPhone = name === "محمد علي الزهراني"
+        ? "0535011747"
+        : "05" + Math.floor(10000000 + Math.random() * 89999999);
 
       // mysql2 يرجع [rows, fields] دائماً، والـ insertId يوصلنا له عبر rows.insertId
       const [studentResult] = await connection.query(

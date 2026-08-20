@@ -1,0 +1,72 @@
+<%- include('partials/header') %>
+
+  <section class="app-section active">
+    <div class="supervisor-panel-header">
+      <h3 class="panel-welcome">📤 تذكير نهاية الأسبوع عبر واتساب</h3>
+      <a href="/supervisor/panel" class="btn btn-outline btn-small">‹ رجوع للوحة المشرفين</a>
+    </div>
+    <p class="section-desc">
+      قائمة الطلاب الذين لم يُنجزوا أحد متطلبات الذاتي أو لم يحضروا أحد أيام الأسبوع المحدد.
+      اضغط زر "إرسال واتساب" بجانب كل طالب — سيفتح واتساب على جهازك برسالة جاهزة، أرسلها من رقمك المسجَّل به (0573568216).
+    </p>
+
+    <div class="panel-box" style="margin-bottom:18px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="weekSelect">الأسبوع</label>
+        <select id="weekSelect" class="form-select" onchange="location.href='/supervisor/weekly-reminders?week=' + this.value">
+          <% for (let w = 1; w <= 16; w++) { %>
+            <option value="<%= w %>" <%= w === weekNumber ? 'selected' : '' %>>الأسبوع <%= w %></option>
+          <% } %>
+        </select>
+      </div>
+    </div>
+
+    <% if (!list.length) { %>
+      <div class="panel-box">
+        <p class="empty-note">لا يوجد طلاب متأخرون عن متطلبات هذا الأسبوع 🎉</p>
+      </div>
+    <% } else { %>
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>الأسرة</th>
+              <th>الجوال</th>
+              <th>سبب التذكير</th>
+              <th>إرسال</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% list.forEach((s, i) => {
+              const reasons = [];
+              if (s.missedDays > 0) reasons.push('لم يحضر يوماً على الأقل من أيام الأسبوع');
+              if (s.missedTasks > 0) reasons.push('لم يُنجز أحد متطلبات الذاتي');
+              const reasonText = reasons.join(' و ');
+              const message = `السلام عليكم، نود تذكير الطالب/ة ${s.name} (${s.group_name}) بأنه ${reasonText} للأسبوع ${weekNumber} في قسم قائد. نأمل الحرص الأسبوع القادم 🌱`;
+              const intlPhone = s.phone && /^05\d{8}$/.test(s.phone) ? '966' + s.phone.slice(1) : null;
+              const waLink = intlPhone ? `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}` : null;
+            %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><%= s.name %></td>
+                <td><%= s.group_name %></td>
+                <td><%= s.phone || '—' %></td>
+                <td style="font-size:12px;"><%= reasonText %></td>
+                <td>
+                  <% if (waLink) { %>
+                    <a href="<%= waLink %>" target="_blank" class="btn btn-gold btn-small">📤 إرسال واتساب</a>
+                  <% } else { %>
+                    <span class="empty-note" style="font-size:12px;">لا يوجد رقم جوال مسجَّل</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+
+<%- include('partials/footer') %>

@@ -16,7 +16,47 @@ document.addEventListener("DOMContentLoaded", () => {
   setupAddStudentForm();
   setupDeleteStudentForm();
   setupMoveStudentForm();
+  setupPhoneInputs();
 });
+
+/* =========================================================
+   0.06) حفظ رقم جوال الطالب تلقائياً عند تعديله (إدارة فقط)
+   ========================================================= */
+function setupPhoneInputs() {
+  document.querySelectorAll(".phone-input").forEach((input) => {
+    const original = input.value;
+    input.addEventListener("change", async () => {
+      const phone = input.value.trim();
+      if (phone && !/^05\d{8}$/.test(phone)) {
+        alert("رقم الجوال يجب أن يكون بصيغة سعودية صحيحة (05xxxxxxxx)");
+        input.value = original;
+        return;
+      }
+      const studentId = input.dataset.studentId;
+      input.disabled = true;
+      try {
+        const res = await fetch("/api/supervisor/students/phone", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentId, phone }),
+        });
+        const data = await res.json();
+        if (!data.success) {
+          alert(data.message || "حدث خطأ");
+          input.value = original;
+        } else {
+          input.style.borderColor = "var(--teal)";
+          setTimeout(() => { input.style.borderColor = ""; }, 1200);
+        }
+      } catch (e) {
+        alert("حدث خطأ في الاتصال بالخادم");
+        input.value = original;
+      } finally {
+        input.disabled = false;
+      }
+    });
+  });
+}
 
 /* =========================================================
    0.1) إضافة طالب جديد (إدارة فقط)

@@ -13,11 +13,13 @@ router.post("/supervisor/logout", supervisorController.handleLogout);
 router.get("/supervisor/panel", requireSupervisorPage, supervisorController.showPanel);
 router.get("/supervisor/attendance-cards", requireSupervisorPage, supervisorController.showAttendanceCards);
 router.get("/supervisor/points-archive", requireSupervisorPage, supervisorController.showPointsArchive);
+router.get("/supervisor/weekly-reminders", requireSupervisorPage, supervisorController.showWeeklyReminders);
 
 /* -------- API (محمية بجلسة المشرف) -------- */
 router.post("/api/supervisor/students", requireAdminApi, supervisorController.addStudent);
 router.post("/api/supervisor/students/move", requireAdminApi, supervisorController.moveStudent);
 router.post("/api/supervisor/students/delete", requireAdminApi, supervisorController.deleteStudent);
+router.post("/api/supervisor/students/phone", requireAdminApi, supervisorController.updateStudentPhone);
 router.post("/api/supervisor/points", requireSupervisorApi, supervisorController.addPoints);
 router.post("/api/supervisor/attendance", requireSupervisorApi, supervisorController.markAttendanceManual);
 router.post("/api/supervisor/self-achievements", requireAdminApi, supervisorController.setSelfAchievementStatus);

@@ -400,6 +400,61 @@ async function deleteStudent(name, groupId) {
   return student;
 }
 
+/* -------- تحديث رقم جوال الطالب (لأغراض التواصل عبر واتساب) -------- */
+async function updateStudentPhone(studentId, phone) {
+  await pool.query("UPDATE students SET guardian_phone = ? WHERE id = ?", [phone, studentId]);
+}
+
+/* -------- قائمة الطلاب الذين لم يُنجزوا أحد متطلبات الذاتي أو لم يحضروا أحد أيام أسبوع معين --------
+   تُستخدم لتذكيرهم نهاية الأسبوع عبر واتساب */
+async function getWeeklyReminderList(weekNumber) {
+  const [sessions] = await pool.query("SELECT id FROM sessions WHERE week_number = ?", [weekNumber]);
+  const sessionIds = sessions.map((s) => s.id);
+
+  const [tasks] = await pool.query("SELECT id FROM weekly_self_tasks WHERE week_number = ?", [weekNumber]);
+  const taskIds = tasks.map((t) => t.id);
+
+  if (!sessionIds.length && !taskIds.length) return [];
+
+  const [students] = await pool.query(`
+    SELECT s.id, s.name, s.guardian_phone AS phone, g.name AS group_name
+    FROM students s
+    JOIN \`groups\` g ON g.id = s.group_id
+    ORDER BY g.name ASC, s.name ASC
+  `);
+
+  const attendedSet = new Set();
+  if (sessionIds.length) {
+    const [attRows] = await pool.query(
+      "SELECT student_id, session_id FROM attendance WHERE session_id IN (?) AND status IN ('حاضر','متأخر')",
+      [sessionIds]
+    );
+    attRows.forEach((r) => attendedSet.add(`${r.student_id}-${r.session_id}`));
+  }
+
+  const achievedSet = new Set();
+  if (taskIds.length) {
+    const [achRows] = await pool.query(
+      "SELECT student_id, task_id FROM self_achievements WHERE task_id IN (?)",
+      [taskIds]
+    );
+    achRows.forEach((r) => achievedSet.add(`${r.student_id}-${r.task_id}`));
+  }
+
+  const result = [];
+  for (const s of students) {
+    const missedDays = sessionIds.filter((sid) => !attendedSet.has(`${s.id}-${sid}`)).length;
+    const missedTasks = taskIds.filter((tid) => !achievedSet.has(`${s.id}-${tid}`)).length;
+    if (missedDays > 0 || missedTasks > 0) {
+      result.push({
+        id: s.id, name: s.name, phone: s.phone, group_name: s.group_name,
+        missedDays, missedTasks,
+      });
+    }
+  }
+  return result;
+}
+
 module.exports = {
   INITIATIVE_CATEGORIES,
   getAllStudents,
@@ -412,6 +467,8 @@ module.exports = {
   markAttendance,
   getAttendanceForSession,
   setSelfAchievementDone,
+  updateStudentPhone,
+  getWeeklyReminderList,
   addSelfTask,
   deleteSelfTask,
   createStudent,
