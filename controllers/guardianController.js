@@ -57,8 +57,7 @@ async function getStudentDetails(req, res, next) {
     );
 
     const { rank: overallRank, total: totalStudents } = await studentModel.getStudentRankOverall(
-      student.id,
-      student.group_category
+      student.id
     );
 
     const [svRows] = await pool.query("SELECT value FROM settings WHERE `key` = 'scores_visible'");

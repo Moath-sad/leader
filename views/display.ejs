@@ -109,12 +109,7 @@
       font-size: 2rem; font-weight: 900; color: var(--gold);
       margin-bottom: 28px; display: flex; align-items: center; gap: 12px;
     }
-    .leaders-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 1100px; }
-    .leaders-col-title {
-      font-size: 1.2rem; font-weight: 700; color: var(--gold);
-      margin-bottom: 12px; text-align: center; padding: 8px 0;
-      border-bottom: 2px solid rgba(245,197,24,0.3);
-    }
+    #leadersList { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 700px; }
     .leader-row {
       display: flex; align-items: center; gap: 14px;
       padding: 10px 16px; border-radius: 12px;
@@ -134,7 +129,7 @@
     .slide-groups  { background: linear-gradient(150deg, #102030 0%, #1c3a58 100%); }
     .groups-display-grid {
       display: grid; grid-template-columns: 1fr; gap: 10px;
-      width: 100%;
+      width: 100%; max-width: 700px;
     }
     .group-display-card {
       display: flex; align-items: center; gap: 16px;
@@ -255,31 +250,13 @@
   <!-- ===== شريحة 2: المتصدرون ===== -->
   <div class="slide slide-leaders" id="slide-1">
     <div class="slide-title">🏆 المتصدرون</div>
-    <div class="leaders-grid" id="leadersGrid">
-      <div>
-        <div class="leaders-col-title">🥇 الفئة العليا</div>
-        <div id="leadersEulya"></div>
-      </div>
-      <div>
-        <div class="leaders-col-title">🌠 الفئة الأولية</div>
-        <div id="leadersAwlawiya"></div>
-      </div>
-    </div>
+    <div id="leadersList"></div>
   </div>
 
   <!-- ===== شريحة 3: ترتيب المجموعات ===== -->
   <div class="slide slide-groups" id="slide-2">
     <div class="slide-title">📊 ترتيب المجموعات</div>
-    <div class="leaders-grid">
-      <div>
-        <div class="leaders-col-title">🥇 الفئة العليا</div>
-        <div class="groups-display-grid" id="groupsDisplayEulya"></div>
-      </div>
-      <div>
-        <div class="leaders-col-title">🌠 الفئة الأولية</div>
-        <div class="groups-display-grid" id="groupsDisplayAwlawiya"></div>
-      </div>
-    </div>
+    <div class="groups-display-grid" id="groupsDisplay"></div>
   </div>
 
   <!-- ===== شريحة 4: إحصائيات اليوم ===== -->
@@ -423,23 +400,20 @@
       const data = await res.json();
 
       /* المتصدرون */
-      ['Eulya', 'Awlawiya'].forEach((key, idx) => {
-        const category = idx === 0 ? 'الفئة العليا' : 'الأولوية';
-        const list = (data.topByCategory[category] || []).slice(0, 5);
-        document.getElementById('leaders' + key).innerHTML = list.map((s, i) => `
-          <div class="leader-row ${i < 3 ? 'r' + (i+1) : ''}">
-            <span class="leader-rank">${['🥇','🥈','🥉'][i] || (i+1)}</span>
-            <div>
-              <div class="leader-name">${s.name}</div>
-              <div class="leader-group">${s.group_name}</div>
-            </div>
-            <span class="leader-pts">${s.total_points}</span>
-          </div>`).join('');
-      });
+      const leadersList = (data.topStudents || []).slice(0, 10);
+      document.getElementById('leadersList').innerHTML = leadersList.map((s, i) => `
+        <div class="leader-row ${i < 3 ? 'r' + (i+1) : ''}">
+          <span class="leader-rank">${['🥇','🥈','🥉'][i] || (i+1)}</span>
+          <div>
+            <div class="leader-name">${s.name}</div>
+            <div class="leader-group">${s.group_name}</div>
+          </div>
+          <span class="leader-pts">${s.total_points}</span>
+        </div>`).join('');
 
-      /* المجموعات (كل فئة على حدة) */
+      /* المجموعات */
       const medals = ['🥇','🥈','🥉'];
-      const renderGroups = (list) => list.map((g, i) => `
+      document.getElementById('groupsDisplay').innerHTML = data.groups.map((g, i) => `
           <div class="group-display-card ${i < 3 ? 'g'+(i+1) : ''}">
             <span class="gd-rank">${medals[i] || i+1}</span>
             <div class="gd-info">
@@ -448,11 +422,6 @@
             </div>
             <span class="gd-pts">${g.total_points}</span>
           </div>`).join('');
-
-      const eulyaGroups = data.groups.filter(g => g.category !== 'الأولوية');
-      const awlawiyaGroups = data.groups.filter(g => g.category === 'الأولوية');
-      document.getElementById('groupsDisplayEulya').innerHTML = renderGroups(eulyaGroups);
-      document.getElementById('groupsDisplayAwlawiya').innerHTML = renderGroups(awlawiyaGroups);
 
       /* الإحصائيات */
       document.getElementById('statStudents').textContent   = data.stats.totalStudents;

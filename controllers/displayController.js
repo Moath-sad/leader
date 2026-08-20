@@ -27,15 +27,15 @@ async function showDisplay(req, res, next) {
 /* -------- API: جميع بيانات الشاشة (تُحدَّث كل دقيقة) -------- */
 async function getDisplayData(req, res, next) {
   try {
-    const [stats, topByCategory, groups, currentSession] = await Promise.all([
+    const [stats, topStudents, groups, currentSession] = await Promise.all([
       statsModel.getHomeStats(),
-      studentModel.getTopStudentsByCategory(5),
+      studentModel.getTopStudents(10),
       groupModel.getRankedGroups(),
       sessionModel.getCurrentOrNextSession(),
     ]);
     const dailyQuestion = getTodayQuestion();
 
-    res.json({ success: true, stats, topByCategory, groups, currentSession, dailyQuestion });
+    res.json({ success: true, stats, topStudents, groups, currentSession, dailyQuestion });
   } catch (err) {
     next(err);
   }

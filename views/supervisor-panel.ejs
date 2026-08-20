@@ -96,17 +96,9 @@
       </div>
 
       <div id="familyPickerLevel">
-        <h5 class="attendance-category-title">الفئة العليا</h5>
         <div class="family-btn-grid">
-          <% aliyaGroups.forEach((g, i) => { %>
-            <button type="button" class="family-btn" onclick="showFamilyAttendance('aliya-<%= i %>')"><%= g.groupName %></button>
-          <% }) %>
-        </div>
-
-        <h5 class="attendance-category-title">الفئة الأولية</h5>
-        <div class="family-btn-grid">
-          <% auliaGroups.forEach((g, i) => { %>
-            <button type="button" class="family-btn" onclick="showFamilyAttendance('aulia-<%= i %>')"><%= g.groupName %></button>
+          <% allGroups.forEach((g, i) => { %>
+            <button type="button" class="family-btn" onclick="showFamilyAttendance(<%= i %>)"><%= g.groupName %></button>
           <% }) %>
         </div>
       </div>
@@ -118,10 +110,7 @@
       </div>
     </div>
 
-    <script type="application/json" id="attendanceGroupsDataJson"><%- JSON.stringify({
-      "aliya": aliyaGroups,
-      "aulia": auliaGroups,
-    }) %></script>
+    <script type="application/json" id="attendanceGroupsDataJson"><%- JSON.stringify(allGroups) %></script>
 
     <div class="panel-grid">
       <!-- نموذج إضافة / خصم النقاط -->

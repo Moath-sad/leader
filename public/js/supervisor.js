@@ -173,20 +173,17 @@ function setupMoveStudentForm() {
 }
 
 /* =========================================================
-   0.3) قائمة الحضور بالجملة: أزرار الأسر حسب الفئة
+   0.3) قائمة الحضور بالجملة: أزرار الأسر
    ========================================================= */
 function setupAttendanceListByFamily() {
   const dataEl = document.getElementById("attendanceGroupsDataJson");
   const sessionSelect = document.getElementById("attListSessionSelect");
   if (!dataEl || !sessionSelect) return;
 
-  const { aliya, aulia } = JSON.parse(dataEl.textContent);
-  const allGroups = {};
-  aliya.forEach((g, i) => { allGroups["aliya-" + i] = g; });
-  aulia.forEach((g, i) => { allGroups["aulia-" + i] = g; });
+  const allGroups = JSON.parse(dataEl.textContent);
 
-  window.showFamilyAttendance = function (key) {
-    const group = allGroups[key];
+  window.showFamilyAttendance = function (index) {
+    const group = allGroups[index];
 
     document.getElementById("familyPickerLevel").classList.add("hidden");
     document.getElementById("familyDetailLevel").classList.remove("hidden");
@@ -607,10 +604,6 @@ async function loadTaskConfig() {
     const data = await res.json();
     if (!data.success) return;
 
-    // نقسّم المتطلبات لقسمين حسب المرحلة (3 للأولية و4 للعليا) بدل عرضها كقائمة واحدة مسطّحة
-    const aulia = data.config.filter((t) => t.category === "الأولوية");
-    const aliya = data.config.filter((t) => t.category === "الفئة العليا");
-
     const renderRow = (t) => `
       <div class="task-config-row">
         <span class="task-config-title">${t.title}</span>
@@ -620,12 +613,7 @@ async function loadTaskConfig() {
       </div>
     `;
 
-    configBox.innerHTML = `
-      <h5 class="task-config-group-title">المرحلة الأولية</h5>
-      ${aulia.map(renderRow).join("")}
-      <h5 class="task-config-group-title">المرحلة العليا</h5>
-      ${aliya.map(renderRow).join("")}
-    `;
+    configBox.innerHTML = data.config.map(renderRow).join("");
   } catch (e) {
     configBox.innerHTML = `<p class="form-msg error">تعذر تحميل الإعدادات</p>`;
   }

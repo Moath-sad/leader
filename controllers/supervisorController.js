@@ -126,11 +126,11 @@ async function showPanel(req, res, next) {
       attendanceMap[r.student_id][r.session_id] = r.status;
     });
 
-    // تجميع الطلاب حسب اسم مجموعتهم (أسرتهم) وفئتها (أولية/عليا) لقائمة الحضور بالجملة
+    // تجميع الطلاب حسب اسم مجموعتهم (أسرتهم) لقائمة الحضور بالجملة
     const groupsMap = {};
     students.forEach((s) => {
       if (!groupsMap[s.group_name]) {
-        groupsMap[s.group_name] = { groupName: s.group_name, category: s.group_category, members: [] };
+        groupsMap[s.group_name] = { groupName: s.group_name, members: [] };
       }
       groupsMap[s.group_name].members.push({
         id: s.id,
@@ -138,9 +138,7 @@ async function showPanel(req, res, next) {
         attendance: attendanceMap[s.id] || {},
       });
     });
-    const groupedStudents = Object.values(groupsMap);
-    const auliaGroups = groupedStudents.filter((g) => g.category === "الأولوية");
-    const aliyaGroups = groupedStudents.filter((g) => g.category === "الفئة العليا");
+    const allGroups = Object.values(groupsMap);
 
     res.render("supervisor-panel", {
       pageTitle: "لوحة المشرفين",
@@ -151,8 +149,7 @@ async function showPanel(req, res, next) {
       sessions,
       attendanceMap,
       scoresVisible,
-      auliaGroups,
-      aliyaGroups,
+      allGroups,
       currentSessionId: currentSession ? currentSession.id : null,
     });
   } catch (err) {
@@ -365,15 +362,11 @@ async function scanBarcodeAttendance(req, res, next) {
 /* -------- API: جلب إعدادات نقاط المتطلبات (قيمة واحدة لكل عنوان) -------- */
 async function getTaskConfig(req, res, next) {
   try {
-    // نجلب فئة (مرحلة) كل متطلب عبر ربطه بطلاب مجموعتها، لعرضها مقسّمة
-    // (3 متطلبات للمرحلة الأولية و4 للمرحلة العليا) في لوحة الإدارة
     const [rows] = await pool.query(`
-      SELECT kt.title, g.category, MAX(kt.points) AS points
+      SELECT kt.title, MAX(kt.points) AS points
       FROM knowledge_tasks kt
-      JOIN students s ON s.id = kt.student_id
-      JOIN \`groups\` g ON g.id = s.group_id
-      GROUP BY kt.title, g.category
-      ORDER BY g.category ASC, MIN(kt.id)
+      GROUP BY kt.title
+      ORDER BY MIN(kt.id)
     `);
     res.json({ success: true, config: rows });
   } catch (err) { next(err); }

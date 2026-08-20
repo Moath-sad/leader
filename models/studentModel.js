@@ -134,27 +134,22 @@ async function getTopStudents(limit = 10) {
   return rows;
 }
 
-/* -------- أفضل 5 من كل فئة (الأولوية / العليا) للصفحة الرئيسية -------- */
-async function getTopStudentsByCategory(limit = 5) {
+/* -------- أفضل الطلاب على مستوى النادي بالكامل للصفحة الرئيسية -------- */
+async function getTopStudents(limit = 10) {
   const [rows] = await pool.query(`
     SELECT
-      s.id, s.name, g.name AS group_name, g.category,
+      s.id, s.name, g.name AS group_name,
       (s.knowledge_points + s.sports_points + s.cultural_points + s.attendance_points + s.home_tasks_points) AS total_points
     FROM students s
     JOIN \`groups\` g ON g.id = s.group_id
-    ORDER BY g.category ASC, total_points DESC
-  `);
-
-  const byCategory = {};
-  rows.forEach((s) => {
-    if (!byCategory[s.category]) byCategory[s.category] = [];
-    if (byCategory[s.category].length < limit) byCategory[s.category].push(s);
-  });
-  return byCategory;
+    ORDER BY total_points DESC
+    LIMIT ?
+  `, [limit]);
+  return rows;
 }
 
-/* -------- الترتيب العام للطالب بين طلاب فئته فقط (الأولوية أو الفئة العليا) -------- */
-async function getStudentRankOverall(studentId, category) {
+/* -------- الترتيب العام للطالب بين كل طلاب النادي -------- */
+async function getStudentRankOverall(studentId) {
   // الترتيب (بخلاف الإجمالي المعروض) يحتسب نقاط المبادرات أيضاً
   const [rows] = await pool.query(`
     SELECT s.id,
@@ -162,10 +157,8 @@ async function getStudentRankOverall(studentId, category) {
         + COALESCE((SELECT SUM(i.points) FROM initiatives i WHERE i.student_id = s.id), 0)
       ) AS total_points
     FROM students s
-    JOIN \`groups\` g ON g.id = s.group_id
-    WHERE g.category = ?
     ORDER BY total_points DESC
-  `, [category]);
+  `);
   const rank = rows.findIndex((s) => s.id === studentId) + 1;
   return { rank, total: rows.length };
 }
@@ -465,6 +458,6 @@ module.exports = {
   createStudent,
   moveStudentGroup,
   deleteStudent,
-  getTopStudentsByCategory,
+  getTopStudents,
   getStudentRankOverall,
 };
