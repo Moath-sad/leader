@@ -2,33 +2,17 @@
 
   <section class="app-section active">
     <h2 class="section-title">المجموعات</h2>
-    <p class="section-desc">اختر الفئة ثم المجموعة لعرض تفاصيل الطلاب</p>
+    <p class="section-desc">اختر المجموعة لعرض تفاصيل الطلاب</p>
 
     <!-- مسار التنقل (breadcrumb) -->
     <nav class="groups-breadcrumb" id="groupsBreadcrumb"></nav>
 
-    <!-- المستوى 1: الفئتان -->
-    <div id="levelCategories" class="groups-level">
-      <div class="category-cards-grid">
-        <div class="category-select-card major" onclick="showGroups('الفئة العليا')">
-          <span class="cat-icon">🏆</span>
-          <h3>الفئة العليا</h3>
-          <p><%= majorGroups.length %> مجموعات</p>
-        </div>
-        <div class="category-select-card minor" onclick="showGroups('الأولوية')">
-          <span class="cat-icon">🌠</span>
-          <h3>الفئة الأولية</h3>
-          <p><%= minorGroups.length %> مجموعات</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- المستوى 2: مجموعات الفئة المختارة -->
-    <div id="levelGroups" class="groups-level hidden">
+    <!-- المستوى 1: المجموعات الست -->
+    <div id="levelGroups" class="groups-level">
       <div class="groups-summary-grid" id="groupsSummaryGrid"></div>
     </div>
 
-    <!-- المستوى 3: طلاب المجموعة المختارة -->
+    <!-- المستوى 2: طلاب المجموعة المختارة -->
     <div id="levelStudents" class="groups-level hidden">
       <div id="groupDetailContainer"></div>
     </div>
@@ -39,23 +23,14 @@
 <script>
   const scoresVisible = <%- JSON.stringify(scoresVisible) %>;
 
-  const allGroups = {
-    'الفئة العليا': <%- JSON.stringify(majorGroups.map(g => ({
-      id: g.id, name: g.name, category: g.category,
-      member_count: g.member_count, total_points: g.total_points, avg_points: g.avg_points,
-      members: g.members.map(m => ({ id: m.id, name: m.name, total_points: m.total_points, knowledge_points: m.knowledge_points, sports_points: m.sports_points, cultural_points: m.cultural_points, attendance_points: m.attendance_points, home_tasks_points: m.home_tasks_points, initiatives_points: m.initiatives_points }))
-    }))) %>,
-    'الأولوية': <%- JSON.stringify(minorGroups.map(g => ({
-      id: g.id, name: g.name, category: g.category,
-      member_count: g.member_count, total_points: g.total_points, avg_points: g.avg_points,
-      members: g.members.map(m => ({ id: m.id, name: m.name, total_points: m.total_points, knowledge_points: m.knowledge_points, sports_points: m.sports_points, cultural_points: m.cultural_points, attendance_points: m.attendance_points, home_tasks_points: m.home_tasks_points, initiatives_points: m.initiatives_points }))
-    }))) %>
-  };
-
-  let currentCategory = null;
+  const allGroups = <%- JSON.stringify(groups.map(g => ({
+    id: g.id, name: g.name, category: g.category,
+    member_count: g.member_count, total_points: g.total_points, avg_points: g.avg_points,
+    members: g.members.map(m => ({ id: m.id, name: m.name, total_points: m.total_points, knowledge_points: m.knowledge_points, sports_points: m.sports_points, cultural_points: m.cultural_points, attendance_points: m.attendance_points, home_tasks_points: m.home_tasks_points, initiatives_points: m.initiatives_points }))
+  }))) %>;
 
   function showLevel(id) {
-    ['levelCategories','levelGroups','levelStudents'].forEach(l => {
+    ['levelGroups','levelStudents'].forEach(l => {
       document.getElementById(l).classList.add('hidden');
     });
     document.getElementById(id).classList.remove('hidden');
@@ -71,9 +46,8 @@
     }).join('');
   }
 
-  function showGroups(category) {
-    currentCategory = category;
-    const groups = allGroups[category] || [];
+  function renderGroups() {
+    const groups = allGroups;
     const grid = document.getElementById('groupsSummaryGrid');
 
     grid.innerHTML = groups.map((g, i) => {
@@ -96,17 +70,12 @@
       `;
     }).join('');
 
-    const categoryLabel = category === 'الأولوية' ? 'الأولية' : category;
-    updateBreadcrumb([
-      { label: 'المجموعات', fn: "backToCategories()" },
-      { label: categoryLabel }
-    ]);
+    updateBreadcrumb([{ label: 'المجموعات' }]);
     showLevel('levelGroups');
   }
 
   function showStudents(groupId) {
-    const groups = allGroups[currentCategory] || [];
-    const group = groups.find(g => g.id === groupId);
+    const group = allGroups.find(g => g.id === groupId);
     if (!group) return;
 
     const container = document.getElementById('groupDetailContainer');
@@ -143,18 +112,17 @@
       </div>
     `;
 
-    const catLabel = currentCategory === 'الأولوية' ? 'الأولية' : currentCategory;
     updateBreadcrumb([
-      { label: 'المجموعات', fn: "backToCategories()" },
-      { label: catLabel, fn: `showGroups('${currentCategory}')` },
+      { label: 'المجموعات', fn: "backToGroups()" },
       { label: group.name }
     ]);
     showLevel('levelStudents');
   }
 
-  function backToCategories() {
-    updateBreadcrumb([]);
-    document.getElementById('groupsBreadcrumb').innerHTML = '';
-    showLevel('levelCategories');
+  function backToGroups() {
+    updateBreadcrumb([{ label: 'المجموعات' }]);
+    showLevel('levelGroups');
   }
+
+  renderGroups();
 </script>
