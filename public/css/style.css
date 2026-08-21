@@ -1,29 +1,37 @@
 /* =========================================================
-   style.css — هوية نادي القيروان (التصميم الجديد)
-   مستوحى من شعار النادي: ألوان حيوية متعددة
-   أصفر دافئ، تركواز، برتقالي مرجاني، بنفسجي، على خلفية كحلية غامقة كنص أساسي
+   style.css — هوية قسم قائد (التصميم الجديد)
+   مستوحى من شعار القسم: تركواز-فيروزي متدرّج على كحلي غامق داكن
+   لوحة هادئة ومريحة بلونين أساسيين بدل الألوان المتعددة السابقة
    ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Cairo:wght@400;500;600;700&display=swap');
 
 :root {
-  /* الألوان الأربعة المستخرجة مباشرة من شعار النادي */
-  --yellow:        #FFD530;
-  --yellow-light:  #FFE789;
-  --teal:          #6DC7CC;
-  --teal-light:    #A9E0E3;
-  --orange:        #FF6E4A;
-  --orange-light:  #FFB199;
-  --purple:        #8279C7;
-  --purple-light:  #BDB6E8;
-  --navy:          #1B3670;
-  --navy-deep:     #142755;
+  /* التركواز — اللون الأساسي من الشعار الجديد */
+  --teal:          #23B5AA;
+  --teal-light:    #8FE0D6;
+  --teal-deep:     #157A72;
+
+  /* الذهبي — لمسة دافئة للتمييز (ميداليات، أزرار رئيسية) */
+  --yellow:        #F5C518;
+  --yellow-light:  #FCE18A;
+
+  /* البرونزي — للمرتبة الثالثة فقط */
+  --orange:        #C97B4A;
+  --orange-light:  #E3B08C;
+
+  /* تركواز داكن ثانوي — بديل البنفسجي القديم لعناصر "الذاتي" */
+  --purple:        #1F8F86;
+  --purple-light:  #7CD9CE;
+
+  --navy:          #16305F;
+  --navy-deep:     #0F2245;
 
   /* خلفيات ومحايدات */
   --cream:         #FFFBF2;
   --cream-dark:    #FCF2DC;
   --white:         #FFFFFF;
-  --ink:           #20264A;
+  --ink:           #1B2440;
   --ink-soft:      #5C6280;
 
   /* دلالات الحالة */
@@ -31,20 +39,23 @@
   --warning:        #E0A526;
   --success:       #3FA796;
 
+  /* اسم عام يُستخدم في عدة مواضع كمرادف للّون الذهبي */
+  --gold: var(--yellow);
+
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 2px 10px rgba(27, 54, 112, 0.08);
-  --shadow-md: 0 10px 28px rgba(27, 54, 112, 0.14);
-  --shadow-lg: 0 18px 44px rgba(27, 54, 112, 0.2);
+  --shadow-sm: 0 2px 10px rgba(22, 48, 95, 0.08);
+  --shadow-md: 0 10px 28px rgba(22, 48, 95, 0.14);
+  --shadow-lg: 0 18px 44px rgba(22, 48, 95, 0.2);
 
   --font-display: 'Tajawal', sans-serif;
   --font-body: 'Cairo', sans-serif;
 
-  /* تدرّج الشعار المتعدد الألوان — يُستخدم في العناصر المميزة */
-  --gradient-logo: linear-gradient(90deg, var(--yellow) 0%, var(--teal) 25%, var(--orange) 50%, var(--purple) 100%);
+  /* تدرّج الشعار — تركواز إلى كحلي غامق، هادئ ومتناسق */
+  --gradient-logo: linear-gradient(90deg, var(--teal-light) 0%, var(--teal) 45%, var(--navy) 100%);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -66,12 +77,12 @@ button { font-family: inherit; cursor: pointer; border: none; }
 input, select { font-family: inherit; }
 
 :focus-visible {
-  outline: 3px solid var(--orange);
+  outline: 3px solid var(--teal);
   outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------
-   الزخرفة العلوية — شريط بأربع ألوان الشعار بدل لون واحد
+   الزخرفة العلوية — شريط بتدرّج الشعار (تركواز إلى كحلي)
    --------------------------------------------------------- */
 .pattern-strip {
   height: 8px;
@@ -85,9 +96,9 @@ input, select { font-family: inherit; }
 .top-header {
   background: var(--navy);
   background-image:
-    radial-gradient(circle at 12% 20%, rgba(255, 213, 48, 0.18), transparent 38%),
-    radial-gradient(circle at 88% 15%, rgba(130, 121, 199, 0.25), transparent 42%),
-    radial-gradient(circle at 50% 90%, rgba(109, 199, 204, 0.12), transparent 50%);
+    radial-gradient(circle at 12% 20%, rgba(35, 181, 170, 0.22), transparent 38%),
+    radial-gradient(circle at 88% 15%, rgba(245, 197, 24, 0.14), transparent 42%),
+    radial-gradient(circle at 50% 90%, rgba(35, 181, 170, 0.16), transparent 50%);
   color: var(--navy);
   padding: 30px 24px 22px;
   text-align: center;
